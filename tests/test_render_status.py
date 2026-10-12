@@ -3,14 +3,14 @@ import io
 
 from PIL import Image
 
-from claude_eink.models import ComponentStatus, StatusData
-from claude_eink.render.layout import H, W
-from claude_eink.render.screens import render_login
-from claude_eink.render.status_page import (
+from note4_claude.models import ComponentStatus, StatusData
+from note4_claude.render.layout import H, W
+from note4_claude.render.screens import render_login
+from note4_claude.render.status_page import (
     BAR_H, BAR_PITCH, STRIP_X0, render_status, row_geometry,
 )
-from claude_eink.sample import SAMPLE_NOW as NOW
-from claude_eink.sample import sample_status
+from note4_claude.sample import SAMPLE_NOW as NOW
+from note4_claude.sample import sample_status
 
 
 def img(png):

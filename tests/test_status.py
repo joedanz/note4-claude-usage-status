@@ -3,9 +3,9 @@ from datetime import datetime, timedelta, timezone
 import httpx
 import pytest
 
-from claude_eink.models import ComponentStatus, StatusData
-from claude_eink.readers.status_reader import UptimeCache, parse_summary, parse_uptime, read_status
-from claude_eink.sample import SAMPLE_NOW as NOW
+from note4_claude.models import ComponentStatus, StatusData
+from note4_claude.readers.status_reader import UptimeCache, parse_summary, parse_uptime, read_status
+from note4_claude.sample import SAMPLE_NOW as NOW
 
 IDS = {"claude.ai": "id_ai", "Claude Console (platform.claude.com)": "id_con", "Claude API (api.anthropic.com)": "id_api",
        "Claude Code": "id_code", "Claude Cowork": "id_cow"}
@@ -149,7 +149,7 @@ def test_uptime_is_cached_for_thirty_minutes():
 
 def test_uptime_failure_never_breaks_the_status_page(caplog):
     client, _ = mock_client(uptime_status=500)
-    with caplog.at_level("WARNING", logger="claude_eink"):
+    with caplog.at_level("WARNING", logger="note4_claude"):
         s = read_status(client, NOW, uptime_cache=UptimeCache())
     assert "uptime fetch failed" in caplog.text
     assert s.ok and all(c.days == () for c in s.components)

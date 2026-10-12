@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-APP = "claude-eink"
+APP = "note4-claude"
 
 
 def config_path() -> Path:

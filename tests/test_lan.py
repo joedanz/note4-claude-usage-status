@@ -2,10 +2,10 @@
 import pytest
 from PIL import Image
 
-from claude_eink.sample import SAMPLE_NOW
-from claude_eink.lan import FRAME_BYTES, LanSink, png_to_frame
-from claude_eink.render.canvas import to_png
-from claude_eink.render.screens import render_login
+from note4_claude.sample import SAMPLE_NOW
+from note4_claude.lan import FRAME_BYTES, LanSink, png_to_frame
+from note4_claude.render.canvas import to_png
+from note4_claude.render.screens import render_login
 
 NOW = SAMPLE_NOW
 

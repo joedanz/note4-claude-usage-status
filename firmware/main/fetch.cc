@@ -10,7 +10,7 @@
 #include "esp_log.h"
 
 namespace {
-const char* kTag = "claude_eink";
+const char* kTag = "note4_claude";
 
 struct Ctx {
     uint8_t* buf;

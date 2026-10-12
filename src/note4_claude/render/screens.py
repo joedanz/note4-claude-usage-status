@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from claude_eink.render.canvas import draw_header, draw_text, new_canvas, to_png
-from claude_eink.render.layout import W
+from note4_claude.render.canvas import draw_header, draw_text, new_canvas, to_png
+from note4_claude.render.layout import W
 
 
 def render_login(*, now: datetime, show_clock: bool = True) -> bytes:
@@ -13,5 +13,5 @@ def render_login(*, now: datetime, show_clock: bool = True) -> bytes:
     draw_text(d, (W // 2, 96), "LOG IN AGAIN", 30, bold=True, fill=1, anchor="mm")
     draw_text(d, (W // 2, 132), "claude.ai session expired", 12, fill=1, anchor="mm")
     draw_text(d, (W // 2, 190), "On your Mac, run:", 12, anchor="mm")
-    draw_text(d, (W // 2, 214), "claude-eink login", 18, bold=True, anchor="mm")
+    draw_text(d, (W // 2, 214), "note4-claude login", 18, bold=True, anchor="mm")
     return to_png(im)

@@ -6,7 +6,7 @@ import re
 import socket
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-log = logging.getLogger("claude_eink")
+log = logging.getLogger("note4_claude")
 PAGE_RE = re.compile(r"^/v1/page/(\d{1,4})\.bin$")
 
 
@@ -33,7 +33,7 @@ def make_server(
     key_bytes = device_key.encode()
 
     class Handler(BaseHTTPRequestHandler):
-        server_version = "claude-eink"
+        server_version = "note4-claude"
         timeout = request_timeout_s  # an idle or half-open client must not hold a thread forever
 
         def _send(self, code: int, body: bytes = b"", headers: dict[str, str] | None = None) -> None:

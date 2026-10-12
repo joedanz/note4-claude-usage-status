@@ -13,7 +13,7 @@ p = argparse.ArgumentParser()
 p.add_argument("--port", default="/dev/cu.usbmodem1101")
 p.add_argument("--seconds", type=float, default=30)
 p.add_argument("--reset", action="store_true", help="pulse RTS once at the start to catch the boot log")
-p.add_argument("--grep", default="claude_eink", help="only print lines containing this (empty = all)")
+p.add_argument("--grep", default="note4_claude", help="only print lines containing this (empty = all)")
 args = p.parse_args()
 
 end = time.time() + args.seconds

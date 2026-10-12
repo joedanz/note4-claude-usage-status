@@ -6,9 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-from claude_eink import paths
+from note4_claude import paths
 
-LABEL = "net.ticc.claude-eink"
+LABEL = "io.github.joedanz.note4-claude"
 
 
 def plist_path() -> Path:
@@ -19,7 +19,7 @@ def render_plist(python: str, log_path: str) -> bytes:
     return plistlib.dumps(
         {
             "Label": LABEL,
-            "ProgramArguments": [python, "-m", "claude_eink", "run"],
+            "ProgramArguments": [python, "-m", "note4_claude", "run"],
             "RunAtLoad": True,
             "KeepAlive": True,
             "ThrottleInterval": 30,

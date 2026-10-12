@@ -5,7 +5,7 @@ e-paper display (4.2", 400x300, monochrome).
 
 ![Usage page](tests/golden/usage_q.png) ![Status page](tests/golden/status.png)
 
-> Unofficial. Not affiliated with or endorsed by Anthropic or ZECTRIX Lab. The command-line tool is called `claude-eink`.
+> Unofficial. Not affiliated with or endorsed by Anthropic or ZECTRIX Lab.
 
 - **Page 1, usage:** three horizontal gauges (5-hour, weekly, and any model-specific weekly limit) with a big percent,
   25/50/75% ticks, a ▼ marker for how far through the window you are in time, and the reset time. A slim column shows
@@ -35,7 +35,7 @@ Anthropic status + GitHub releases ───────────────
 The DevKit fetches `GET /v1/page/{n}.bin` (a raw 15,000-byte frame) with `If-None-Match`, redraws only when the
 picture changed, and goes back to sleep. **OK** and **DOWN** wake it and flip between pages (see `firmware/`).
 
-The ZECTRIX Cloud API path (`claude-eink setup --cloud`) still exists for retail NOTE4 units. The Developer Kit is not a
+The ZECTRIX Cloud API path (`note4-claude setup --cloud`) still exists for retail NOTE4 units. The Developer Kit is not a
 cloud device, so it uses the LAN path.
 
 ## Requirements
@@ -48,18 +48,18 @@ macOS, Google Chrome, Python 3.11+, and a NOTE4 (monochrome). Building the firmw
 python3 -m venv .venv
 .venv/bin/pip install -e ".[dev]"
 .venv/bin/pytest -q
-.venv/bin/claude-eink preview          # render sample pages to ./preview (no login or device needed)
+.venv/bin/note4-claude preview          # render sample pages to ./preview (no login or device needed)
 ```
 
 ## Run it (LAN delivery)
 
 ```bash
-.venv/bin/claude-eink login            # opens a regular Chrome on the dedicated profile: sign in, then quit Chrome (Cmd+Q)
-.venv/bin/claude-eink probe            # check the usage page can be read (starts the collector's Chrome if needed)
-.venv/bin/claude-eink setup            # create the device key (owner-only config file)
-.venv/bin/claude-eink device-key       # print it, to paste into firmware/main/secrets.local.h (DEVICE_KEY)
-.venv/bin/claude-eink doctor --live    # check everything, including a real read
-.venv/bin/claude-eink install          # run it in the background (LaunchAgent, restarts if it crashes)
+.venv/bin/note4-claude login            # opens a regular Chrome on the dedicated profile: sign in, then quit Chrome (Cmd+Q)
+.venv/bin/note4-claude probe            # check the usage page can be read (starts the collector's Chrome if needed)
+.venv/bin/note4-claude setup            # create the device key (owner-only config file)
+.venv/bin/note4-claude device-key       # print it, to paste into firmware/main/secrets.local.h (DEVICE_KEY)
+.venv/bin/note4-claude doctor --live    # check everything, including a real read
+.venv/bin/note4-claude install          # run it in the background (LaunchAgent, restarts if it crashes)
 ```
 
 The collector reads the usage page by attaching to a normal Chrome that it starts on the dedicated profile (a minimized
@@ -75,7 +75,7 @@ scripts/deploy.sh --dry-run USER@HOST      # show what would happen
 scripts/deploy.sh --no-install USER@HOST   # FIRST time: copy the code and build the venv, start nothing
 # ... sign in on that machine (next paragraph) ...
 scripts/deploy.sh USER@HOST                # then: re-sync, create the device key if missing, install the LaunchAgent, run doctor
-ssh USER@HOST '~/claude-eink/.venv/bin/claude-eink device-key'   # print the key for the firmware secrets file
+ssh USER@HOST '~/note4-claude/.venv/bin/note4-claude device-key'   # print the key for the firmware secrets file
 ```
 
 `deploy.sh` never copies `firmware/` or any `secrets.local.h`. It creates the venv with an explicit Python 3.13 path
@@ -84,8 +84,8 @@ ssh USER@HOST '~/claude-eink/.venv/bin/claude-eink device-key'   # print the key
 refuses while it does.
 
 **One-time sign-in on that machine.** Cookies are encrypted with that Mac's Keychain, so the profile cannot be copied.
-Run `claude-eink login` there (in Terminal in a Screen Sharing session, or from your own Mac with
-`ssh USER@HOST '~/claude-eink/.venv/bin/claude-eink login'`; the Chrome window opens on that Mac's screen either way).
+Run `note4-claude login` there (in Terminal in a Screen Sharing session, or from your own Mac with
+`ssh USER@HOST '~/note4-claude/.venv/bin/note4-claude login'`; the Chrome window opens on that Mac's screen either way).
 Sign in, wait for the normal Claude screen, then quit Chrome with Cmd+Q. Chrome is started through macOS `open`, so it runs
 in the GUI session even over SSH; a Chrome exec'd directly from SSH cannot reach the Keychain and would lose the sign-in.
 
@@ -98,10 +98,10 @@ image and its "updated" clock shows how old it is.
 **Addressing.** The DevKit reaches the server by LAN address, so give that Mac a DHCP reservation on your router. The
 server binds the LAN address only (never all interfaces), and requires the device key.
 
-**When the display shows LOG IN AGAIN.** The claude.ai session expired. On that Mac: `claude-eink uninstall`, quit the
-dedicated Chrome (Cmd+Q), `claude-eink login`, quit Chrome, `claude-eink install`.
+**When the display shows LOG IN AGAIN.** The claude.ai session expired. On that Mac: `note4-claude uninstall`, quit the
+dedicated Chrome (Cmd+Q), `note4-claude login`, quit Chrome, `note4-claude install`.
 
-**Checking a read while the daemon runs.** `claude-eink push-once` reads and renders without binding the LAN port, so it is safe
+**Checking a read while the daemon runs.** `note4-claude push-once` reads and renders without binding the LAN port, so it is safe
 to run beside the daemon.
 
 ## What you see when something is wrong
@@ -110,7 +110,7 @@ to run beside the daemon.
 |---|---|
 | **LOG IN AGAIN** on page 1 | The dedicated profile's claude.ai session expired (see above). |
 | **STALE hh:mm** badge on page 1 | No good read for 15 minutes. The last numbers are still shown. |
-| An old "updated" time | The collector or the Mac is down, or the device cannot reach it. Check `claude-eink doctor` and `~/Library/Logs/claude-eink.log`. |
+| An old "updated" time | The collector or the Mac is down, or the device cannot reach it. Check `note4-claude doctor` and `~/Library/Logs/note4-claude.log`. |
 | A small banner along the bottom edge | The DevKit's battery is below 10%. |
 
 The "updated" clock only advances when the picture changes or every 30 minutes, so it can trail the real time by up to half
@@ -120,11 +120,11 @@ an hour on a quiet day.
 
 | What | Where |
 |---|---|
-| Config, including the device key (mode 0600) | `~/.config/claude-eink/config.toml` |
-| Push state | `~/.config/claude-eink/state.json` |
-| Dedicated Chrome profile | `~/Library/Application Support/claude-eink/profile` |
-| Debug captures after 3 parse failures | `~/Library/Application Support/claude-eink/debug` |
-| Log | `~/Library/Logs/claude-eink.log` |
+| Config, including the device key (mode 0600) | `~/.config/note4-claude/config.toml` |
+| Push state | `~/.config/note4-claude/state.json` |
+| Dedicated Chrome profile | `~/Library/Application Support/note4-claude/profile` |
+| Debug captures after 3 parse failures | `~/Library/Application Support/note4-claude/debug` |
+| Log | `~/Library/Logs/note4-claude.log` |
 
 ## Firmware
 

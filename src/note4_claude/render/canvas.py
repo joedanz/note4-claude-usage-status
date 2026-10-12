@@ -6,7 +6,7 @@ from functools import lru_cache
 
 from PIL import Image, ImageDraw, ImageFont
 
-from claude_eink.render.layout import H, HEADER_H, W
+from note4_claude.render.layout import H, HEADER_H, W
 
 
 @lru_cache(maxsize=None)

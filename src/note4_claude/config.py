@@ -6,7 +6,7 @@ import tomllib
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
 
-from claude_eink import paths
+from note4_claude import paths
 
 DELIVERIES = ("lan", "cloud")
 DEFAULT_API_BASE = "https://cloud.zectrix.com"

@@ -4,10 +4,10 @@ import threading
 import httpx
 import pytest
 
-from claude_eink.sample import SAMPLE_NOW
-from claude_eink.lan import LanSink
-from claude_eink.lan_server import detect_lan_ip, make_server
-from claude_eink.render.screens import render_login
+from note4_claude.sample import SAMPLE_NOW
+from note4_claude.lan import LanSink
+from note4_claude.lan_server import detect_lan_ip, make_server
+from note4_claude.render.screens import render_login
 
 NOW = SAMPLE_NOW
 KEY = "s3cret-device-key"

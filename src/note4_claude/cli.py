@@ -7,18 +7,18 @@ from pathlib import Path
 
 import httpx
 
-from claude_eink import config as config_mod
-from claude_eink import keychain, paths
-from claude_eink.models import NotLoggedIn, TransientError
-from claude_eink.pusher import device_id_of, list_devices
-from claude_eink.readers import usage_reader
-from claude_eink.state import State
+from note4_claude import config as config_mod
+from note4_claude import keychain, paths
+from note4_claude.models import NotLoggedIn, TransientError
+from note4_claude.pusher import device_id_of, list_devices
+from note4_claude.readers import usage_reader
+from note4_claude.state import State
 
 
 def cmd_login(args) -> int:
     if not usage_reader.login(paths.profile_dir()):
         return 1
-    print("Done. Run `claude-eink probe` to check the usage page can be read.")
+    print("Done. Run `note4-claude probe` to check the usage page can be read.")
     return 0
 
 
@@ -26,7 +26,7 @@ def _probe() -> int:
     try:
         text = usage_reader.read_usage_text(paths.profile_dir())
     except NotLoggedIn:
-        print("NOT LOGGED IN: run `claude-eink login`")
+        print("NOT LOGGED IN: run `note4-claude login`")
         return 2
     except TransientError as e:
         print(f"TRANSIENT: {e}")
@@ -38,7 +38,7 @@ def _probe() -> int:
 
 
 def cmd_preview(args) -> int:
-    from claude_eink.sample import sample_pngs
+    from note4_claude.sample import sample_pngs
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -76,14 +76,14 @@ def cmd_setup(args) -> int:
     cfg.delivery = "lan"
     config_mod.save(cfg)
     print(f"LAN delivery is set up. The device key is in {paths.config_path()} (owner-only).")
-    print("Run `claude-eink device-key` to print it, and put it in firmware/main/secrets.local.h (DEVICE_KEY).")
+    print("Run `note4-claude device-key` to print it, and put it in firmware/main/secrets.local.h (DEVICE_KEY).")
     return 0
 
 
 def cmd_device_key(args) -> int:
     key = config_mod.load().device_key
     if not key:
-        print("No device key yet: run `claude-eink setup` first.", file=sys.stderr)
+        print("No device key yet: run `note4-claude setup` first.", file=sys.stderr)
         return 1
     print(key)
     return 0
@@ -96,7 +96,7 @@ def _ok(flag: bool) -> str:
 def _gui_session() -> bool:
     import subprocess
 
-    from claude_eink import launchd
+    from note4_claude import launchd
 
     return subprocess.run(["launchctl", "print", launchd.gui_domain()], capture_output=True).returncode == 0
 
@@ -108,7 +108,7 @@ def cmd_doctor(args) -> int:
     print(f"{_ok(profile.exists())} dedicated profile at {profile}")
     print(f"{_ok(_gui_session())} GUI session (needed for the collector's Chrome)")
     if cfg.delivery == "lan":
-        from claude_eink.lan_server import detect_lan_ip
+        from note4_claude.lan_server import detect_lan_ip
 
         print(f"{_ok(bool(cfg.device_key))} device key in config")
         print(f"     serves on {cfg.lan_bind or detect_lan_ip()}:{cfg.lan_port}")
@@ -134,7 +134,7 @@ def cmd_doctor(args) -> int:
 def cmd_push_once(args) -> int:
     import logging
 
-    from claude_eink import collector as collector_mod
+    from note4_claude import collector as collector_mod
 
     logging.basicConfig(level=logging.INFO, stream=sys.stderr, format="%(levelname)s %(message)s")
     collector, _ = collector_mod.build_collector(serve=False)   # the running daemon owns the LAN port
@@ -153,7 +153,7 @@ def cmd_run(args) -> int:
     import threading
     from logging.handlers import RotatingFileHandler
 
-    from claude_eink.collector import build_collector, run_forever
+    from note4_claude.collector import build_collector, run_forever
 
     paths.log_path().parent.mkdir(parents=True, exist_ok=True)
     logging.basicConfig(
@@ -165,20 +165,20 @@ def cmd_run(args) -> int:
     collector, server = build_collector(cfg)
     if server is not None:
         threading.Thread(target=server.serve_forever, daemon=True, name="lan-server").start()
-        logging.getLogger("claude_eink").info("serving frames on %s:%s", *server.server_address[:2])
+        logging.getLogger("note4_claude").info("serving frames on %s:%s", *server.server_address[:2])
     run_forever(collector, cfg)
     return 0
 
 
 def cmd_install(args) -> int:
-    from claude_eink import launchd
+    from note4_claude import launchd
 
     print(f"Installed {launchd.install()}. Logs: {paths.log_path()}")
     return 0
 
 
 def cmd_uninstall(args) -> int:
-    from claude_eink import launchd
+    from note4_claude import launchd
 
     launchd.uninstall()
     print("Removed the LaunchAgent.")
@@ -190,7 +190,7 @@ def cmd_probe(args) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="claude-eink")
+    p = argparse.ArgumentParser(prog="note4-claude")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("login", help="sign in once in the dedicated profile").set_defaults(fn=cmd_login)
     pr = sub.add_parser("probe", help="read the usage modal and print the top lines")
@@ -213,9 +213,13 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    from claude_eink.config import ConfigError
+    from note4_claude.config import ConfigError
 
     args = build_parser().parse_args(argv)
+    if args.fn is not cmd_preview:
+        from note4_claude import migrate
+
+        migrate.migrate_legacy()
     try:
         return args.fn(args)
     except ConfigError as e:

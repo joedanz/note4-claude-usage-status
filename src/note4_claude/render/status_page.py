@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from claude_eink.models import StatusData
-from claude_eink.render.canvas import (
+from note4_claude.models import StatusData
+from note4_claude.render.canvas import (
     draw_header,
     draw_text,
     fit_text,
@@ -13,7 +13,7 @@ from claude_eink.render.canvas import (
     to_png,
     wrap_text,
 )
-from claude_eink.render.layout import H, HEADER_H, W
+from note4_claude.render.layout import H, HEADER_H, W
 
 STRIP_X0 = 20      # left edge of the 90-day strip
 BAR_PITCH = 4      # 3 px bar + 1 px gap per day

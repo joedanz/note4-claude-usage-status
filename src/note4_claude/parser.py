@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 
-from claude_eink.models import Money, ParseFailed, Usage, Window, WindowKind
+from note4_claude.models import Money, ParseFailed, Usage, Window, WindowKind
 
 WEEKDAYS = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
 RESET_RE = re.compile(

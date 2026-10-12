@@ -4,12 +4,12 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from claude_eink.models import ComponentStatus, StatusData, Usage
-from claude_eink.parser import parse
-from claude_eink.readers.status_reader import COMPONENTS
-from claude_eink.render.screens import render_login
-from claude_eink.render.status_page import render_status
-from claude_eink.render.usage_page import render_usage
+from note4_claude.models import ComponentStatus, StatusData, Usage
+from note4_claude.parser import parse
+from note4_claude.readers.status_reader import COMPONENTS
+from note4_claude.render.screens import render_login
+from note4_claude.render.status_page import render_status
+from note4_claude.render.usage_page import render_usage
 
 # The fixture is a snapshot from Tue 2026-09-29 around 10:04 AM Eastern; its "Resets ..."
 # lines only validate against a clock near that moment, so previews use this fixed clock.

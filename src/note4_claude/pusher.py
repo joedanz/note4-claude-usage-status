@@ -4,8 +4,8 @@ import time
 
 import httpx
 
-from claude_eink.config import DEFAULT_API_BASE
-from claude_eink.state import HEARTBEAT_S, State
+from note4_claude.config import DEFAULT_API_BASE
+from note4_claude.state import HEARTBEAT_S, State
 
 # Multipart field name for the image file. Verified live against the real API (see the
 # live-verification step in the plan); adjust here if the API rejects it.

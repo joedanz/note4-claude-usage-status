@@ -12,7 +12,7 @@
 #include "rtc_state.h"
 
 namespace {
-const char* kTag = "claude_eink";
+const char* kTag = "note4_claude";
 constexpr int kConnectedBit = BIT0;
 constexpr int kFailedBit = BIT1;
 EventGroupHandle_t g_events;

@@ -33,7 +33,7 @@ Wake WakeReason() {
 }
 
 void DeepSleepFor(uint32_t seconds) {
-    ESP_LOGI("claude_eink", "deep sleep for %u s", static_cast<unsigned>(seconds));
+    ESP_LOGI("note4_claude", "deep sleep for %u s", static_cast<unsigned>(seconds));
     esp_sleep_enable_timer_wakeup(static_cast<uint64_t>(seconds) * 1000000ULL);
     PrepareButton(ZECTRIX_BUTTON_OK);
     PrepareButton(ZECTRIX_BUTTON_DOWN);

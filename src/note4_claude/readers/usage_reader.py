@@ -10,7 +10,7 @@ from playwright.sync_api import Error as PWError
 from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
 
-from claude_eink.models import NotLoggedIn, TransientError
+from note4_claude.models import NotLoggedIn, TransientError
 
 USAGE_URL = "https://claude.ai/new#settings/usage"
 HOME_URL = "https://claude.ai/"
@@ -205,7 +205,7 @@ def login(
     if port_open(port):
         print(
             "The collector's Chrome is already running on the dedicated profile.\n"
-            "Stop the daemon (`claude-eink uninstall`) and quit that Chrome (Cmd+Q), then run "
+            "Stop the daemon (`note4-claude uninstall`) and quit that Chrome (Cmd+Q), then run "
             "login again.",
             flush=True,
         )

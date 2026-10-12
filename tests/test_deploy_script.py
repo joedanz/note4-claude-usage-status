@@ -22,9 +22,9 @@ def test_dry_run_prints_the_plan_and_changes_nothing():
     r = run("--dry-run", TARGET)
     out = r.stdout
     assert r.returncode == 0
-    assert "+ rsync" in out and f"{TARGET}:claude-eink/" in out
+    assert "+ rsync" in out and f"{TARGET}:note4-claude/" in out
     assert "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3" in out   # explicit interpreter
-    assert "claude-eink install" in out
+    assert "note4-claude install" in out
     assert "dry run" in out.lower()
 
 
@@ -43,12 +43,12 @@ def test_python_path_can_be_overridden():
 def test_no_install_only_syncs_and_builds_the_venv():
     out = run("--dry-run", "--no-install", TARGET).stdout
     assert "+ rsync" in out and "pip install" in out
-    assert "claude-eink install" not in out      # nothing is started until the first sign-in is done
-    assert "claude-eink doctor" not in out
+    assert "note4-claude install" not in out      # nothing is started until the first sign-in is done
+    assert "note4-claude doctor" not in out
 
 
 def test_default_run_creates_the_device_key_only_if_there_is_no_config():
     out = run("--dry-run", TARGET).stdout
-    assert "config.toml" in out and "claude-eink setup" in out
+    assert "config.toml" in out and "note4-claude setup" in out
     # the guard must come before setup so an existing (for example cloud) config is never overwritten
-    assert out.index("config.toml") < out.index("claude-eink setup") < out.index("claude-eink install")
+    assert out.index("config.toml") < out.index("note4-claude setup") < out.index("note4-claude install")

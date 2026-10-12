@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from claude_eink.collector import STALE_AFTER, Collector
-from claude_eink.models import ComponentStatus, NotLoggedIn, StatusData, TransientError
-from claude_eink.pusher import PushError
-from claude_eink.render.screens import render_login
-from claude_eink.render.usage_page import render_usage
-from claude_eink.state import State
-from claude_eink.sample import sample_status, sample_text
+from note4_claude.collector import STALE_AFTER, Collector
+from note4_claude.models import ComponentStatus, NotLoggedIn, StatusData, TransientError
+from note4_claude.pusher import PushError
+from note4_claude.render.screens import render_login
+from note4_claude.render.usage_page import render_usage
+from note4_claude.state import State
+from note4_claude.sample import sample_status, sample_text
 
 NY = ZoneInfo("America/New_York")
 

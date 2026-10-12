@@ -1,10 +1,10 @@
 import pytest
 
-from claude_eink.config import Config
-from claude_eink.delivery import build_delivery
-from claude_eink.lan import LanSink
-from claude_eink.pusher import Pusher
-from claude_eink.state import State
+from note4_claude.config import Config
+from note4_claude.delivery import build_delivery
+from note4_claude.lan import LanSink
+from note4_claude.pusher import Pusher
+from note4_claude.state import State
 
 
 def lan_cfg(**kw):
@@ -62,7 +62,7 @@ def test_port_already_in_use_is_a_clear_startup_error(tmp_path):
 
 # Final review 4: never settle for loopback just because the network was not up yet
 def test_no_network_route_at_startup_fails_so_launchd_retries(tmp_path, monkeypatch):
-    monkeypatch.setattr("claude_eink.delivery.detect_lan_ip", lambda: "127.0.0.1")
+    monkeypatch.setattr("note4_claude.delivery.detect_lan_ip", lambda: "127.0.0.1")
     cfg = Config(delivery="lan", lan_bind="", lan_port=0, device_key="k" * 32)
     with pytest.raises(SystemExit, match="network"):
         build_delivery(cfg, state=State.load(tmp_path / "s.json"))

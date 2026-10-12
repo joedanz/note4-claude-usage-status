@@ -6,6 +6,14 @@ import pytest
 GOLD = Path(__file__).parent / "golden"
 
 
+@pytest.fixture(autouse=True)
+def _temp_home(tmp_path, monkeypatch):
+    """Every test gets its own HOME, so nothing (the legacy-name migration above all) touches this Mac's real files."""
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+
+
 @pytest.fixture
 def golden():
     def check(name: str, png: bytes) -> None:

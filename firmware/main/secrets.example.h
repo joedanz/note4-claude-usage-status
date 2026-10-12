@@ -4,4 +4,4 @@
 #define WIFI_SSID "YOUR_WIFI_NAME"
 #define WIFI_PASS "YOUR_WIFI_PASSWORD"
 #define SERVER_BASE "http://192.168.1.50:8099"            // the collector Mac's reserved LAN address
-#define DEVICE_KEY "PASTE_OUTPUT_OF_claude-eink_device-key"
+#define DEVICE_KEY "PASTE_OUTPUT_OF_note4-claude_device-key"
