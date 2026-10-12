@@ -1,0 +1,12 @@
+.superpowers/
+.worktrees/
+.venv/
+preview/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+firmware/main/secrets.local.h
+firmware/build/
+firmware/sdkconfig
+firmware/sdkconfig.old
+firmware/managed_components/

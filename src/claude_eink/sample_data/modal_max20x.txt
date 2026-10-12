@@ -1,0 +1,103 @@
+Settings
+
+Settings
+
+General
+
+Account
+
+Privacy
+
+Billing
+
+Usage
+
+Capabilities
+
+Memory
+
+Design systems
+Reflect
+
+Time and focus
+
+Claude Code
+
+Cowork
+
+Claude in Chrome
+Customize
+
+Skills
+
+Connectors
+
+Plugins
+Platform
+
+API keys
+
+
+Your usage
+Max (20x)
+
+Heads up. At this pace you’ll run out tonight, before Friday’s reset.
+
+Buy more usage
+Current session
+Resets at 12:00 PM
+3% used
+This week
+Resets Friday 3:00 AM
+90% used
+Fable this week
+Separate weekly limit for Fable · Resets Friday 3:00 AM
+0% used
+Resets
+A reset refills your 5-hour and weekly limits when you choose to use it. Your week keeps its usual reset day.
+
+No resets right now
+
+When you get one, it shows up here with its expiry date.
+
+Cloud session credits
+Applies automatically to cloud sessions. After it’s used or expires, your plan’s regular usage applies.
+Included credit
+Expires 2:59 AM EST, November 5
+$250 of $250 left
+Usage credits
+Available for any task. Promotional credits are used before purchased credits.
+$12.40
+
+Turn on usage credits to keep using Claude if you hit a plan limit. Learn more
+
+Credit type
+	Granted	Spent	Remaining
+
+Purchased
+—
+Not available
+	—
+Not available
+	$12.40
+Buy more usage
+Monthly spend limit
+
+$21.75 of $50 this month · Auto-reload off
+
+Credits are spent automatically past your plan limits, up to this cap.
+
+Manage
+This week’s usage by product
+Claude Code
+100%
+Chats
+0%
+Cowork
+0%
+Other
+0%
+Last updated: just now
+
+Learn more about usage limits
+See transaction history on the Billing page
