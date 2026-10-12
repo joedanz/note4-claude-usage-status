@@ -1,6 +1,6 @@
 from PIL import ImageChops
 
-from claude_eink.render.canvas import draw_text, fit_text, new_canvas, text_width
+from note4_claude.render.canvas import draw_text, fit_text, new_canvas, text_width
 
 
 def test_short_text_keeps_max_size():
@@ -72,7 +72,7 @@ def test_centered_and_right_anchored_text_keeps_its_anchor():
             assert abs(right - 200) <= 3
 
 
-from claude_eink.render.canvas import wrap_text
+from note4_claude.render.canvas import wrap_text
 
 
 def test_wrap_text_keeps_short_text_on_one_line():

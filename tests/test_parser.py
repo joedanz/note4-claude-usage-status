@@ -3,9 +3,9 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from claude_eink.sample import SAMPLE_NOW, sample_text
-from claude_eink.models import ParseFailed, WindowKind
-from claude_eink.parser import parse
+from note4_claude.sample import SAMPLE_NOW, sample_text
+from note4_claude.models import ParseFailed, WindowKind
+from note4_claude.parser import parse
 
 NY = ZoneInfo("America/New_York")
 NOW = SAMPLE_NOW

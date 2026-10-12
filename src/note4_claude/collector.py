@@ -7,17 +7,17 @@ from datetime import datetime, timedelta
 
 import httpx
 
-from claude_eink import config as config_mod
-from claude_eink import paths
-from claude_eink.models import NotLoggedIn, ParseFailed, TransientError
-from claude_eink.parser import parse
-from claude_eink.pusher import PushError
-from claude_eink.render.screens import render_login
-from claude_eink.render.status_page import render_status
-from claude_eink.render.usage_page import render_usage
-from claude_eink.state import State
+from note4_claude import config as config_mod
+from note4_claude import paths
+from note4_claude.models import NotLoggedIn, ParseFailed, TransientError
+from note4_claude.parser import parse
+from note4_claude.pusher import PushError
+from note4_claude.render.screens import render_login
+from note4_claude.render.status_page import render_status
+from note4_claude.render.usage_page import render_usage
+from note4_claude.state import State
 
-log = logging.getLogger("claude_eink")
+log = logging.getLogger("note4_claude")
 STALE_AFTER = timedelta(minutes=15)
 DEBUG_AFTER_FAILURES = 3
 MAX_BARLESS_SKIPS = 2      # ticks a healthy status page may be held back while the uptime data is unavailable
@@ -142,8 +142,8 @@ class Collector:
 
 def build_collector(cfg=None, *, serve=True):
     """The collector plus the LAN server (None for cloud delivery). The server is not started here."""
-    from claude_eink.delivery import build_delivery
-    from claude_eink.readers import status_reader, usage_reader
+    from note4_claude.delivery import build_delivery
+    from note4_claude.readers import status_reader, usage_reader
 
     cfg = cfg or config_mod.load()
     state = State.load(paths.state_path())

@@ -1,8 +1,8 @@
 import httpx
 import pytest
 
-from claude_eink.pusher import PushError, Pusher, device_id_of, list_devices
-from claude_eink.state import State
+from note4_claude.pusher import PushError, Pusher, device_id_of, list_devices
+from note4_claude.state import State
 
 
 class Clock:

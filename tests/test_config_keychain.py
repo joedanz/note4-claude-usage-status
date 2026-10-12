@@ -1,7 +1,7 @@
 import subprocess
 
-from claude_eink import keychain
-from claude_eink.config import Config, load, save
+from note4_claude import keychain
+from note4_claude.config import Config, load, save
 
 
 def test_config_round_trip(tmp_path):
@@ -56,7 +56,7 @@ import stat
 
 import pytest
 
-from claude_eink.config import ConfigError, new_device_key
+from note4_claude.config import ConfigError, new_device_key
 
 
 def test_saved_config_is_owner_only(tmp_path):

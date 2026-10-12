@@ -5,11 +5,11 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image
 
-from claude_eink.sample import SAMPLE_NOW
-from claude_eink.models import Window, WindowKind
-from claude_eink.render.layout import H, W, bar_box
-from claude_eink.render.usage_page import caption_for, render_usage, select_windows
-from claude_eink.sample import sample_usage
+from note4_claude.sample import SAMPLE_NOW
+from note4_claude.models import Window, WindowKind
+from note4_claude.render.layout import H, W, bar_box
+from note4_claude.render.usage_page import caption_for, render_usage, select_windows
+from note4_claude.sample import sample_usage
 
 NY = ZoneInfo("America/New_York")
 NOW = SAMPLE_NOW

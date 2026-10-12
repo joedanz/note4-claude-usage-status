@@ -6,9 +6,9 @@ from datetime import datetime, timedelta, timezone
 
 import httpx
 
-from claude_eink.models import ComponentStatus, StatusData
+from note4_claude.models import ComponentStatus, StatusData
 
-log = logging.getLogger("claude_eink")
+log = logging.getLogger("note4_claude")
 SUMMARY_URL = "https://status.claude.com/api/v2/summary.json"
 UPTIME_URL = "https://status.claude.com/uptime_showcase"
 RELEASE_URL = "https://api.github.com/repos/anthropics/claude-code/releases/latest"

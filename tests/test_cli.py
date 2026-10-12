@@ -1,5 +1,5 @@
-import claude_eink.collector as collector_mod
-from claude_eink.cli import main
+import note4_claude.collector as collector_mod
+from note4_claude.cli import main
 
 
 def test_preview_writes_all_pngs(tmp_path):
@@ -37,19 +37,19 @@ def test_push_once_fails_loudly_when_a_page_did_not_go_out(monkeypatch, capsys):
 def test_main_reports_a_config_error_instead_of_a_traceback(tmp_path, monkeypatch, capsys):
     bad = tmp_path / "config.toml"
     bad.write_text('delivery = "nope"\n')
-    monkeypatch.setattr("claude_eink.paths.config_path", lambda: bad)
+    monkeypatch.setattr("note4_claude.paths.config_path", lambda: bad)
     assert main(["doctor"]) == 2
     assert "config error" in capsys.readouterr().err
 
 
 import stat
 
-from claude_eink import config as config_mod
+from note4_claude import config as config_mod
 
 
 def test_setup_creates_a_private_device_key_once(tmp_path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.toml"
-    monkeypatch.setattr("claude_eink.paths.config_path", lambda: cfg_path)
+    monkeypatch.setattr("note4_claude.paths.config_path", lambda: cfg_path)
     assert main(["setup"]) == 0
     first = config_mod.load(cfg_path)
     assert first.delivery == "lan" and len(first.device_key) >= 32
@@ -61,23 +61,23 @@ def test_setup_creates_a_private_device_key_once(tmp_path, monkeypatch, capsys):
 
 def test_device_key_command_prints_the_key(tmp_path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.toml"
-    monkeypatch.setattr("claude_eink.paths.config_path", lambda: cfg_path)
+    monkeypatch.setattr("note4_claude.paths.config_path", lambda: cfg_path)
     config_mod.save(config_mod.Config(device_key="abc-123"), cfg_path)
     assert main(["device-key"]) == 0
     assert capsys.readouterr().out.strip() == "abc-123"
 
 
 def test_device_key_command_without_setup_fails_helpfully(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr("claude_eink.paths.config_path", lambda: tmp_path / "none.toml")
+    monkeypatch.setattr("note4_claude.paths.config_path", lambda: tmp_path / "none.toml")
     assert main(["device-key"]) == 1
     assert "setup" in capsys.readouterr().err
 
 
 def test_doctor_reports_lan_delivery_state(tmp_path, monkeypatch, capsys):
     cfg_path = tmp_path / "config.toml"
-    monkeypatch.setattr("claude_eink.paths.config_path", lambda: cfg_path)
-    monkeypatch.setattr("claude_eink.paths.profile_dir", lambda: tmp_path / "profile")
-    monkeypatch.setattr("claude_eink.paths.state_path", lambda: tmp_path / "state.json")
+    monkeypatch.setattr("note4_claude.paths.config_path", lambda: cfg_path)
+    monkeypatch.setattr("note4_claude.paths.profile_dir", lambda: tmp_path / "profile")
+    monkeypatch.setattr("note4_claude.paths.state_path", lambda: tmp_path / "state.json")
     config_mod.save(config_mod.Config(device_key="abc"), cfg_path)
     main(["doctor"])
     out = capsys.readouterr().out

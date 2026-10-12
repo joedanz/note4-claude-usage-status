@@ -8,8 +8,8 @@ from dataclasses import dataclass
 
 from PIL import Image
 
-from claude_eink.render.layout import H, W
-from claude_eink.state import HEARTBEAT_S
+from note4_claude.render.layout import H, W
+from note4_claude.state import HEARTBEAT_S
 
 FRAME_BYTES = W * H // 8  # 15,000: one bit per pixel, row-major, MSB first
 

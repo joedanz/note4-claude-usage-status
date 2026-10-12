@@ -12,10 +12,10 @@ import hashlib
 import threading
 import time
 
-from claude_eink.config import Config
-from claude_eink.lan import FRAME_BYTES, LanSink
-from claude_eink.lan_server import detect_lan_ip, make_server
-from claude_eink.sample import sample_pngs
+from note4_claude.config import Config
+from note4_claude.lan import FRAME_BYTES, LanSink
+from note4_claude.lan_server import detect_lan_ip, make_server
+from note4_claude.sample import sample_pngs
 
 p = argparse.ArgumentParser()
 p.add_argument("--host", default="")

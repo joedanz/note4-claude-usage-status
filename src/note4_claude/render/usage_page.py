@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from claude_eink.models import Usage, Window, WindowKind
-from claude_eink.render.canvas import (
+from note4_claude.models import Usage, Window, WindowKind
+from note4_claude.render.canvas import (
     draw_header,
     draw_text,
     fit_text,
@@ -13,7 +13,7 @@ from claude_eink.render.canvas import (
     text_width,
     to_png,
 )
-from claude_eink.render.layout import (
+from note4_claude.render.layout import (
     H,
     HEADER_H,
     MAIN_W,

@@ -15,7 +15,7 @@
 #include "zectrix_epd.h"
 
 namespace {
-const char* kTag = "claude_eink";
+const char* kTag = "note4_claude";
 ZectrixCanvas g_canvas;  // 15,000 bytes; the fetched frame lands in g_canvas.data()
 
 // Every path below ends in DeepSleepFor, but a hang (panel, board init, a trickling server) would keep the radio
