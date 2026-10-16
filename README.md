@@ -5,6 +5,8 @@ e-paper display (4.2", 400x300, monochrome).
 
 ![Usage page](tests/golden/usage_q.png) ![Status page](tests/golden/status.png)
 
+*Pages rendered by the collector from sample data (not device photos); the device shows exactly these 1-bit frames.*
+
 > Unofficial. Not affiliated with or endorsed by Anthropic or ZECTRIX Lab.
 
 - **Page 1, usage:** three horizontal gauges (5-hour, weekly, and any model-specific weekly limit) with a big percent,
@@ -35,12 +37,14 @@ Anthropic status + GitHub releases ───────────────
 The DevKit fetches `GET /v1/page/{n}.bin` (a raw 15,000-byte frame) with `If-None-Match`, redraws only when the
 picture changed, and goes back to sleep. **OK** and **DOWN** wake it and flip between pages (see `firmware/`).
 
-The ZECTRIX Cloud API path (`note4-claude setup --cloud`) still exists for retail NOTE4 units. The Developer Kit is not a
-cloud device, so it uses the LAN path.
+There is also an experimental ZECTRIX Cloud API path (`note4-claude setup --cloud`) meant for retail NOTE4 units. It has
+not been tested against a real cloud device. The Developer Kit is not a cloud device, so it uses the LAN path.
 
 ## Requirements
 
-macOS, Google Chrome, Python 3.11+, and a NOTE4 (monochrome). Building the firmware needs ESP-IDF 5.4.
+macOS, Google Chrome, Python 3.11+, and a **monochrome ZECTRIX NOTE4 Devkit**. The firmware is not for the four-color
+NOTE4C: its panel driver differs and the images are not interchangeable. Building the firmware needs ESP-IDF 5.4; there is
+no prebuilt image, because the Wi-Fi details, server address and device key are compiled in.
 
 ## Install (development Mac)
 
