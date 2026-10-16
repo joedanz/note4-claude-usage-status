@@ -19,8 +19,17 @@ While the firmware is running it deep-sleeps and the USB port disappears; it is 
 so `idf.py flash` can fail with "run_serial_tool" errors. Poll for `/dev/cu.usbmodem1101` and flash the moment it appears
 (or hold BOOT and tap RESET to force download mode).
 
-Back up the full 16 MB factory flash before the first flash (`esptool read-flash 0 0x1000000 backup.bin`). Only flash the
-monochrome NOTE4. For development without the real collector, run `scripts/dev_lan_server.py` from the repository root.
+Back up the full 16 MB factory flash before the first flash, and keep a copy somewhere safe. Only flash the monochrome
+NOTE4 Devkit, never the four-color NOTE4C.
+
+```bash
+esptool.py --chip esp32s3 -p /dev/cu.usbmodem1101 read_flash 0 0x1000000 factory-backup.bin   # back up
+shasum -a 256 factory-backup.bin > factory-backup.bin.sha256
+esptool.py --chip esp32s3 -p /dev/cu.usbmodem1101 write_flash 0 factory-backup.bin             # restore it later
+```
+
+Run these after `. ~/esp/esp-idf/export.sh` (ESP-IDF 5.4 ships esptool 4.x). Restoring the backup puts the original ZECTRIX
+firmware back. For development without the real collector, run `scripts/dev_lan_server.py` from the repository root.
 
 ## Behavior
 
