@@ -19,6 +19,12 @@ HOME_URL = "https://claude.ai/"
 CHROME_APP = "Google Chrome"
 CDP_PORT = 9333
 DIALOG = '[role="dialog"]'
+WEEK_TOGGLE = f'{DIALOG} [data-testid="pace-week-toggle"]'
+WEEK_PANEL_OPEN_JS = (
+    "() => { const b = document.querySelector('[role=\"dialog\"] [data-testid=\"pace-week-toggle\"]');"
+    " const p = b && document.getElementById(b.getAttribute('aria-controls') || '');"
+    " return !!p && p.innerText.trim().length > 0; }"
+)
 HAS_USAGE_JS = (
     "() => { const d = document.querySelector('[role=\"dialog\"]');"
     " return !!d && d.innerText.includes('% used'); }"
@@ -162,6 +168,21 @@ def _read_settled(page, *, settle_ms: int = 12000, poll_ms: int = 500) -> str:
     return text
 
 
+def _expand_weekly(page, *, timeout_ms: int = 5000) -> None:
+    """Open the "This week" toggle, where claude.ai nests model limits such as Fable.
+
+    It starts collapsed on every load. Model limits are optional, so a missing or stuck toggle
+    leaves the read without them instead of failing it.
+    """
+    toggle = page.locator(WEEK_TOGGLE)
+    try:
+        if toggle.count() and toggle.first.get_attribute("aria-expanded") == "false":
+            toggle.first.click(timeout=timeout_ms)
+            page.wait_for_function(WEEK_PANEL_OPEN_JS, timeout=timeout_ms)
+    except PWError:
+        pass
+
+
 def _looks_logged_out(page) -> bool:
     if is_login_url(page.url):
         return True
@@ -202,6 +223,7 @@ def read_usage_text(
                 raise TransientError("usage modal did not appear in time") from e
             except PWError as e:
                 raise TransientError(str(e)) from e
+            _expand_weekly(page)
             if screenshot_to is not None:
                 page.screenshot(path=str(screenshot_to))
             return _read_settled(page)

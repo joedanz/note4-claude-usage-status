@@ -194,3 +194,63 @@ def test_read_settled_gives_up_and_returns_partial_text_instead_of_hanging():
     page = FakePage(LOADING)                             # the credits call never finishes
     assert _read_settled(page, settle_ms=2000, poll_ms=500) == LOADING
     assert page.waited_ms == 2000                        # bounded wait, then return
+
+
+class _Toggle:
+    """Stub for the "This week" toggle locator and the page it lives on."""
+
+    def __init__(self, expanded: str | None, click_error: Exception | None = None):
+        self.expanded, self.click_error = expanded, click_error
+        self.clicks, self.waited = 0, 0
+
+    # page side
+    def locator(self, selector):
+        assert "pace-week-toggle" in selector
+        return self
+
+    def wait_for_function(self, js, timeout):
+        self.waited += 1
+
+    # locator side
+    def count(self):
+        return 0 if self.expanded is None else 1
+
+    @property
+    def first(self):
+        return self
+
+    def get_attribute(self, name):
+        assert name == "aria-expanded"
+        return self.expanded
+
+    def click(self, timeout):
+        if self.click_error:
+            raise self.click_error
+        self.clicks += 1
+        self.expanded = "true"
+
+
+def test_expand_weekly_opens_the_collapsed_toggle_and_waits_for_its_panel():
+    from note4_claude.readers.usage_reader import _expand_weekly
+
+    page = _Toggle("false")
+    _expand_weekly(page)
+    assert (page.clicks, page.waited) == (1, 1)
+
+
+def test_expand_weekly_leaves_an_open_or_missing_toggle_alone():
+    from note4_claude.readers.usage_reader import _expand_weekly
+
+    for state in ("true", None):
+        page = _Toggle(state)
+        _expand_weekly(page)
+        assert page.clicks == 0
+
+
+def test_expand_weekly_never_fails_the_read():
+    # Model limits are optional: a toggle that won't open just means no model gauge.
+    from playwright.sync_api import TimeoutError as PWTimeout
+
+    from note4_claude.readers.usage_reader import _expand_weekly
+
+    _expand_weekly(_Toggle("false", click_error=PWTimeout("covered by an overlay")))

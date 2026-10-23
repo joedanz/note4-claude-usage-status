@@ -42,12 +42,36 @@ def test_parses_money_and_split():
     assert u.captured_at == NOW
 
 
+FABLE_NEW = "Fable\nUp to 50% of your weekly limit\nResets Friday 3:00 AM\n0% used\n"
+FABLE_OLD = "Fable this week\nSeparate weekly limit for Fable · Resets Friday 3:00 AM\n0% used\n"
+
+
 def test_new_model_weekly_is_picked_up_automatically():
-    text = FIXTURE.replace("Fable this week", "Opus this week").replace(
-        "Separate weekly limit for Fable", "Separate weekly limit for Opus"
+    u = parse(FIXTURE.replace(FABLE_NEW, FABLE_NEW.replace("Fable", "Opus")), NOW)
+    assert by_kind(u, WindowKind.MODEL_WEEK, "Opus").pct == 0
+
+
+def test_older_this_week_model_layout_still_parses():
+    u = parse(FIXTURE.replace(FABLE_NEW, FABLE_OLD), NOW)
+    f = by_kind(u, WindowKind.MODEL_WEEK, "Fable")
+    assert (f.pct, f.resets_at) == (0, by_kind(u, WindowKind.WEEK).resets_at)
+
+
+def test_collapsed_weekly_toggle_just_has_no_model_limit():
+    u = parse(FIXTURE.replace(FABLE_NEW, ""), NOW)
+    assert [w.kind for w in u.windows] == [WindowKind.SESSION_5H, WindowKind.WEEK]
+
+
+def test_weekly_limit_wording_in_the_headline_is_not_a_model_limit():
+    # The pace headline also says "of your weekly limit"; the plan line above it is not a model.
+    text = FIXTURE.replace(
+        "Heads up. At this pace you’ll run out tonight, before Friday’s reset.",
+        "Fresh week. 3% of your weekly limit used.",
     )
     u = parse(text, NOW)
-    assert by_kind(u, WindowKind.MODEL_WEEK, "Opus").pct == 0
+    assert u.plan == "Max (20x)"
+    assert u.pace_headline == "Fresh week. 3% of your weekly limit used."
+    assert [w.label for w in u.windows if w.kind == WindowKind.MODEL_WEEK] == ["Fable"]
 
 
 def test_missing_optional_sections_still_parse():

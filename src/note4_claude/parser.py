@@ -12,6 +12,8 @@ RESET_RE = re.compile(
     re.I,
 )
 PCT_RE = re.compile(r"(\d{1,3})%\s+used")
+# A model limit nested under "This week": its name on one line, then this caption.
+MODEL_CAP_RE = re.compile(r"Up to \d{1,3}% of your weekly limit", re.I)
 WINDOW_LEN = {
     WindowKind.SESSION_5H: timedelta(hours=5),
     WindowKind.WEEK: timedelta(days=7),
@@ -20,8 +22,8 @@ WINDOW_LEN = {
 TOLERANCE = timedelta(minutes=1)
 
 
-def _label(line: str) -> tuple[WindowKind, str] | None:
-    s = line.strip()
+def _label(lines: list[str], i: int) -> tuple[WindowKind, str] | None:
+    s = lines[i].strip()
     if s.lower() == "current session":
         return WindowKind.SESSION_5H, "5-hour"
     m = re.fullmatch(r"(?:(.+?)\s+)?this week", s, re.I)
@@ -29,6 +31,8 @@ def _label(line: str) -> tuple[WindowKind, str] | None:
         if m.group(1):
             return WindowKind.MODEL_WEEK, m.group(1)
         return WindowKind.WEEK, "Weekly"
+    if i + 1 < len(lines) and MODEL_CAP_RE.fullmatch(lines[i + 1].strip()):
+        return WindowKind.MODEL_WEEK, s
     return None
 
 
@@ -51,10 +55,10 @@ def _remaining(resets_at: datetime, now: datetime) -> timedelta:
 
 
 def _parse_window(lines: list[str], i: int, now: datetime) -> Window:
-    kind, label = _label(lines[i])
+    kind, label = _label(lines, i)
     reset_m, pct = None, None
     for j in range(i + 1, min(i + 5, len(lines))):
-        if _label(lines[j]):
+        if _label(lines, j):
             break
         reset_m = reset_m or RESET_RE.search(lines[j])
         pm = PCT_RE.search(lines[j])
@@ -131,14 +135,14 @@ def parse(text: str, now: datetime) -> Usage:
     plan = lines[0]
 
     headline = None
-    for ln in lines[1:]:
-        if _label(ln):
+    for i, ln in enumerate(lines[1:], start=1):
+        if _label(lines, i):
             break
         if ln != "Buy more usage":
             headline = ln
             break
 
-    windows = tuple(_parse_window(lines, i, now) for i, ln in enumerate(lines) if _label(ln))
+    windows = tuple(_parse_window(lines, i, now) for i in range(len(lines)) if _label(lines, i))
     kinds = {w.kind for w in windows}
     if WindowKind.SESSION_5H not in kinds or WindowKind.WEEK not in kinds:
         raise ParseFailed("missing required session or weekly window")

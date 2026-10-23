@@ -122,11 +122,14 @@ def render_status(status: StatusData, *, now: datetime, show_clock: bool = True)
 
     # release line
     d.line((0, H - 34, W, H - 34), fill=0, width=2)
+    label = "LATEST CLAUDE CODE  "  # the two spaces keep the old gap before the value
     if status.release_tag:
         age = "" if status.release_age_days is None else f" - {status.release_age_days}d ago"
-        line = f"LATEST CLAUDE CODE  {status.release_tag}{age}"
+        value = f"{status.release_tag}{age}"
     else:
-        line = "LATEST CLAUDE CODE  unknown"
-    txt, size = fit_text(line, W - 20, 11, 8, bold=True)
-    draw_text(d, (10, H - 17), txt, size, bold=True, anchor="lm")
+        value = "unknown"
+    # Label bold, value regular: double-struck digits blur together on e-ink.
+    txt, size = fit_text(label + value, W - 20, 11, 8, bold=True)
+    draw_text(d, (10, H - 17), label, size, bold=True, anchor="lm")
+    draw_text(d, (10 + text_width(label, size, bold=True), H - 17), txt[len(label):], size, anchor="lm")
     return to_png(im)

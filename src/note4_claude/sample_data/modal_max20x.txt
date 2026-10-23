@@ -50,8 +50,9 @@ Resets at 12:00 PM
 This week
 Resets Friday 3:00 AM
 90% used
-Fable this week
-Separate weekly limit for Fable · Resets Friday 3:00 AM
+Fable
+Up to 50% of your weekly limit
+Resets Friday 3:00 AM
 0% used
 Resets
 A reset refills your 5-hour and weekly limits when you choose to use it. Your week keeps its usual reset day.
