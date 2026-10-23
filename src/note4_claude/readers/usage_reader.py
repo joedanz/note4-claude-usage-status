@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import json
 import socket
 import subprocess
 import time
+import urllib.request
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -117,6 +119,27 @@ def ensure_chrome(
     )
 
 
+def _devtools(port: int, path: str, method: str = "GET"):
+    req = urllib.request.Request(f"http://127.0.0.1:{port}/json/{path}", method=method)
+    with urllib.request.urlopen(req, timeout=5) as resp:
+        return json.load(resp)
+
+
+def ensure_window(port: int = CDP_PORT, *, devtools=_devtools) -> None:
+    """Give the collector's Chrome a tab if it has none.
+
+    On macOS, Chrome keeps running after its last window closes but unloads the profile: the port
+    still answers, yet every attach fails with "Browser context management is not supported", so
+    the reads would stay stale for good. Keeping a tab of our own also means closing the reader's
+    page never closes the last window.
+    """
+    try:
+        if not any(t.get("type") == "page" for t in devtools(port, "list")):
+            devtools(port, "new?about:blank", "PUT")
+    except (OSError, ValueError) as e:  # refused, timed out, or not JSON
+        raise TransientError(f"could not reach Chrome's DevTools: {e}") from e
+
+
 def is_settled(text: str) -> bool:
     """True once the percentages are rendered and no section still shows a 'Loading' placeholder."""
     loading = any(ln.strip().lower().startswith("loading") for ln in text.splitlines())
@@ -157,6 +180,7 @@ def read_usage_text(
 ) -> str:
     """Open the usage modal in the collector's Chrome and return its innerText."""
     ensure_chrome(profile_dir, port)
+    ensure_window(port)
     with sync_playwright() as p:
         try:
             browser = p.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")

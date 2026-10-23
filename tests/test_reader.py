@@ -90,6 +90,49 @@ def test_ensure_chrome_times_out_with_an_actionable_message(tmp_path):
                       port_open=_Ports(False), sleep=lambda s: None, wait_s=1.0)
 
 
+class _DevTools:
+    """devtools stub: answers `list` with the given targets and records every call."""
+
+    def __init__(self, targets):
+        self.targets = targets
+        self.calls = []
+
+    def __call__(self, port, path, method="GET"):
+        self.calls.append((path, method))
+        return self.targets if path == "list" else {"type": "page", "url": "about:blank"}
+
+
+def test_ensure_window_opens_a_tab_when_chrome_has_none():
+    # A windowless Chrome on macOS still answers on the port but has unloaded its profile,
+    # so every attach fails until something opens a tab again.
+    from note4_claude.readers.usage_reader import ensure_window
+
+    devtools = _DevTools([{"type": "browser_ui", "url": "chrome://omnibox-popup.top-chrome/"}])
+    ensure_window(9333, devtools=devtools)
+    assert devtools.calls == [("list", "GET"), ("new?about:blank", "PUT")]
+
+
+def test_ensure_window_leaves_an_existing_tab_alone():
+    from note4_claude.readers.usage_reader import ensure_window
+
+    devtools = _DevTools([{"type": "page", "url": "about:blank"}])
+    ensure_window(9333, devtools=devtools)
+    assert devtools.calls == [("list", "GET")]
+
+
+def test_ensure_window_reports_an_unreachable_devtools_as_transient():
+    import pytest
+
+    from note4_claude.models import TransientError
+    from note4_claude.readers.usage_reader import ensure_window
+
+    def refused(port, path, method="GET"):
+        raise OSError("connection refused")
+
+    with pytest.raises(TransientError, match="connection refused"):
+        ensure_window(9333, devtools=refused)
+
+
 def test_login_refuses_while_the_collectors_chrome_is_running(tmp_path):
     from note4_claude.readers.usage_reader import login
 
