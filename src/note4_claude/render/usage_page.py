@@ -25,7 +25,7 @@ from note4_claude.render.layout import (
     row_box,
 )
 
-SHORT_PRODUCT = {"Claude Code": "Code", "Chats": "Chat"}
+SHORT_PRODUCT = {"Claude Code": "Code", "Claude Duet": "Duet", "Chats": "Chat"}
 HATCH_AT = 80
 
 

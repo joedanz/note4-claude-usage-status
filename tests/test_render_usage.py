@@ -8,7 +8,7 @@ from PIL import Image
 from note4_claude.sample import SAMPLE_NOW
 from note4_claude.models import Window, WindowKind
 from note4_claude.render.layout import H, W, bar_box
-from note4_claude.render.usage_page import caption_for, render_usage, select_windows
+from note4_claude.render.usage_page import caption_for, render_usage, select_windows, side_lines
 from note4_claude.sample import sample_usage
 
 NY = ZoneInfo("America/New_York")
@@ -113,3 +113,8 @@ def test_hundred_percent_badge_is_wide_enough_for_the_text():
     x0, y0, x1, y1 = bar_box(1, 3)
     cy = (y0 + y1) // 2
     assert im.getpixel((80, cy - 20)) == 0   # badge still black beyond the old 78px edge
+
+
+def test_side_panel_shortens_long_product_names_so_the_percent_fits():
+    u = dataclasses.replace(sample_usage(SAMPLE_NOW), product_split={"Claude Code": 93, "Claude Duet": 6, "Chats": 1})
+    assert ("Duet 6%", 9, False) in side_lines(u)
