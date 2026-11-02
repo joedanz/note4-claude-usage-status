@@ -143,9 +143,9 @@ def parse(text: str, now: datetime) -> Usage:
             break
 
     windows = tuple(_parse_window(lines, i, now) for i in range(len(lines)) if _label(lines, i))
-    kinds = {w.kind for w in windows}
-    if WindowKind.SESSION_5H not in kinds or WindowKind.WEEK not in kinds:
-        raise ParseFailed("missing required session or weekly window")
+    # Every plan has a weekly limit; some (Ultra) have no session limit at all.
+    if not any(w.kind == WindowKind.WEEK for w in windows):
+        raise ParseFailed("missing required weekly window")
 
     return Usage(
         plan=plan,

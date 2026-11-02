@@ -90,7 +90,16 @@ def test_missing_required_window_fails():
 
 def test_reworded_label_fails_instead_of_guessing():
     with pytest.raises(ParseFailed):
-        parse(FIXTURE.replace("Current session", "Your session"), NOW)
+        parse(FIXTURE.replace("This week\nResets", "Your week\nResets"), NOW)
+
+
+def test_plan_without_a_session_limit_still_parses():
+    # Ultra shows no "Current session" at all: only the weekly limit and any model limits.
+    session = "Current session\nResets at 12:00 PM\n3% used\n"
+    assert session in FIXTURE
+    u = parse(FIXTURE.replace(session, "").replace("Max (20x)", "Ultra"), NOW)
+    assert u.plan == "Ultra"
+    assert [w.kind for w in u.windows] == [WindowKind.WEEK, WindowKind.MODEL_WEEK]
 
 
 def test_out_of_range_percent_fails():
