@@ -12,7 +12,9 @@ e-paper display (4.2", 400x300, monochrome).
 - **Page 1, usage:** three horizontal gauges (5-hour, weekly, and any model-specific weekly limit) with a big percent,
   25/50/75% ticks, a ▼ marker for how far through the window you are in time, and the reset time. A slim column shows
   credits, cloud credit, month spend and the weekly product split. The top strip shows Anthropic's own pace warning, or a black
-  alert band when service is degraded (the incident title, or the site's headline if none is posted).
+  alert band when service is degraded (the incident title, or the site's headline if none is posted). Free limit resets
+  appear as a row of their own (how many of each type, soonest expiry first, inverted within a week of expiring); on a plan
+  whose gauges fill the page, each type becomes a tag under the gauge it refills.
 - **Page 2, status:** the five Anthropic components (claude.ai, Console, API, Claude Code, Cowork), each with its 90-day uptime
   and a strip of 90 same-height bars, one per day: solid is a normal day, striped a partial outage, an empty gap a major
   outage. When service is degraded the page shows an inverted alert band (headline, incident title, status and start time),

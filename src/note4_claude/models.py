@@ -46,6 +46,14 @@ class Money:
 
 
 @dataclass(frozen=True)
+class LimitReset:
+    """Free resets of one type you can spend on claude.ai, e.g. 3 "Fable" or 1 "Weekly"."""
+    kind: str
+    count: int
+    expires_at: datetime | None
+
+
+@dataclass(frozen=True)
 class Usage:
     plan: str
     pace_headline: str | None
@@ -53,6 +61,7 @@ class Usage:
     money: Money
     product_split: dict[str, int] = field(default_factory=dict)
     captured_at: datetime | None = None
+    resets: tuple[LimitReset, ...] = ()
 
 
 @dataclass(frozen=True)

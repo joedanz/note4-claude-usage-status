@@ -17,9 +17,18 @@ SAMPLE_NOW = datetime(2026, 9, 29, 10, 4, tzinfo=ZoneInfo("America/New_York"))
 
 _DATA = Path(__file__).parent / "sample_data" / "modal_max20x.txt"
 
+# A second snapshot, from an Ultra plan on Mon 2026-11-09 around 8:20 PM Eastern: no session limit, and a
+# "Limit resets" section. Money amounts are made up.
+ULTRA_NOW = datetime(2026, 11, 9, 20, 20, tzinfo=ZoneInfo("America/New_York"))
+_ULTRA = Path(__file__).parent / "sample_data" / "modal_ultra.txt"
+
 
 def sample_text() -> str:
     return _DATA.read_text()
+
+
+def ultra_text() -> str:
+    return _ULTRA.read_text()
 
 
 def sample_usage(now: datetime) -> Usage:

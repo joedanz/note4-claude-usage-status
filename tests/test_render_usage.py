@@ -5,11 +5,18 @@ from zoneinfo import ZoneInfo
 
 from PIL import Image
 
-from note4_claude.sample import SAMPLE_NOW
-from note4_claude.models import Window, WindowKind
-from note4_claude.render.layout import H, W, bar_box
-from note4_claude.render.usage_page import caption_for, render_usage, select_windows, side_lines
-from note4_claude.sample import sample_usage
+from note4_claude.models import LimitReset, Window, WindowKind
+from note4_claude.parser import parse
+from note4_claude.render.layout import H, W, bar_box, row_box
+from note4_claude.render.usage_page import (
+    caption_for,
+    render_usage,
+    reset_lines,
+    reset_tag,
+    select_windows,
+    side_lines,
+)
+from note4_claude.sample import SAMPLE_NOW, ULTRA_NOW, sample_usage, ultra_text
 
 NY = ZoneInfo("America/New_York")
 NOW = SAMPLE_NOW
@@ -118,3 +125,72 @@ def test_hundred_percent_badge_is_wide_enough_for_the_text():
 def test_side_panel_shortens_long_product_names_so_the_percent_fits():
     u = dataclasses.replace(sample_usage(SAMPLE_NOW), product_split={"Claude Code": 93, "Claude Duet": 6, "Chats": 1})
     assert ("Duet 6%", 9, False) in side_lines(u)
+
+
+# --- Limit resets ---------------------------------------------------------------------------------
+
+def ultra():
+    return parse(ultra_text(), ULTRA_NOW)
+
+
+def ink(png, box):
+    return img(png).crop(box).histogram()[0]   # black pixels
+
+
+def test_reset_lines_list_the_soonest_expiry_first():
+    assert reset_lines(ultra().resets, ULTRA_NOW) == [
+        ("Weekly x1", "exp Dec 15", False),
+        ("Fable x3", "exp Mar 9 '27", False),
+    ]
+
+
+def test_reset_expiring_within_a_week_shows_its_weekday_and_is_marked():
+    thu = LimitReset("Weekly", 1, datetime(2026, 11, 12, 23, 59, tzinfo=NY))
+    today = LimitReset("Weekly", 1, datetime(2026, 11, 9, 23, 59, tzinfo=NY))
+    undated = LimitReset("Weekly", 1, None)
+    assert reset_lines((thu,), ULTRA_NOW) == [("Weekly x1", "exp Thu", True)]
+    assert reset_lines((today,), ULTRA_NOW) == [("Weekly x1", "exp today", True)]
+    assert reset_lines((undated,), ULTRA_NOW) == [("Weekly x1", "", False)]
+
+
+def test_resets_fill_the_row_a_plan_leaves_free():
+    u = ultra()
+    x0, y0, _, y1 = bar_box(1, 3)
+    edge = (x0, (y0 + y1) // 2)                      # left edge of the Fable bar in a three-row layout
+    with_resets = render_usage(u, now=ULTRA_NOW)
+    assert img(with_resets).getpixel(edge) == 0       # Fable moved up to make room...
+    _, ry0, _, ry1 = row_box(2, 3)
+    assert ink(with_resets, (x0, ry0, W, ry1)) > 300  # ...for the resets row
+    without = render_usage(dataclasses.replace(u, resets=()), now=ULTRA_NOW)
+    assert img(without).getpixel(edge) == 255         # no resets: the two gauges keep half the page each
+
+
+def test_a_reset_about_to_expire_is_drawn_inverted():
+    u = ultra()
+    soon = dataclasses.replace(u, resets=(LimitReset("Weekly", 1, datetime(2026, 11, 12, 23, 59, tzinfo=NY)),))
+    later = dataclasses.replace(u, resets=(LimitReset("Weekly", 1, datetime(2026, 12, 15, 23, 59, tzinfo=NY)),))
+    free_row = row_box(2, 3)
+    assert ink(render_usage(soon, now=ULTRA_NOW), free_row) > ink(render_usage(later, now=ULTRA_NOW), free_row) + 1500
+
+
+def test_without_a_free_row_each_reset_tags_the_gauge_it_refills():
+    u = dataclasses.replace(sample_usage(NOW), resets=ultra().resets)
+    rows = select_windows(u.windows)
+    assert [reset_tag(w, u.resets, NOW) for w in rows] == [
+        None,                                  # 5-hour: no reset type of its own
+        "1 reset - exp Dec 15",                # Weekly
+        "3 resets - exp Mar 9 '27",            # Fable
+    ]
+
+
+def test_compact_caption_leaves_room_for_a_tag():
+    fri = Window("Weekly", WindowKind.WEEK, 90, datetime(2026, 10, 2, 3, 0, tzinfo=NY), 0.6)
+    noon = Window("5-hour", WindowKind.SESSION_5H, 3, datetime(2026, 9, 29, 12, 30, tzinfo=NY), 0.6)
+    assert caption_for(fri, NOW, compact=True) == "Fri 3AM"
+    assert caption_for(noon, NOW, compact=True) == "12:30PM"
+
+
+def test_golden_usage_with_resets(golden):
+    golden("usage_ultra.png", render_usage(ultra(), now=ULTRA_NOW))
+    tagged = dataclasses.replace(sample_usage(NOW), resets=ultra().resets)
+    golden("usage_tags.png", render_usage(tagged, now=NOW))

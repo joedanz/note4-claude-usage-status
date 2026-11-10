@@ -1,0 +1,85 @@
+Settings
+
+
+Account
+
+Billing
+
+Usage
+
+Appearance
+
+Your Claude
+
+Capabilities
+
+Notifications
+
+Privacy
+
+Wellbeing
+
+Customize
+
+Code
+API keys
+
+Settings
+
+Usage
+Your usage
+Ultra
+On track. You should reach Friday’s reset with room to spare.
+This week
+
+Resets Friday 2:00 AM
+35% used
+Fable
+Up to 50% of your weekly limit
+Resets Friday 2:00 AM
+4% used
+Limit resets
+4 available
+Fable reset · 3
+
+
+All expire Mar 9, 2027, 2:59 AM EST
+Reset for free
+Weekly reset
+Expires Dec 15, 11:59 PM EST
+Reset for free
+Usage credits
+Available for any task. Promotional credits are used before purchased credits.
+$8.20
+
+Turn on usage credits to keep using Claude if you hit a plan limit. Learn more
+
+Credit type
+	Granted	Spent	Remaining
+
+Purchased	—
+Not available
+	—
+Not available
+	$8.20
+Buy usage credits · Up to 30% off
+Monthly spend limit
+
+$3.40 of $50 this month · Auto-reload off
+
+Credits are spent automatically past your plan limits, up to this cap.
+
+Manage
+This week’s usage by product
+Claude Code
+100%
+Chats
+0%
+Cowork
+0%
+Other
+0%
+Last updated: just now
+
+Learn more about usage limits
+See transaction history on the Billing page

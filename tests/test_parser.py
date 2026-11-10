@@ -3,8 +3,8 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from note4_claude.sample import SAMPLE_NOW, sample_text
-from note4_claude.models import ParseFailed, WindowKind
+from note4_claude.sample import SAMPLE_NOW, ULTRA_NOW, sample_text, ultra_text
+from note4_claude.models import LimitReset, ParseFailed, WindowKind
 from note4_claude.parser import parse
 
 NY = ZoneInfo("America/New_York")
@@ -156,3 +156,46 @@ def test_remaining_time_is_real_elapsed_time_across_dst():
     now = datetime(2026, 10, 31, 22, 0, tzinfo=NY)
     w = by_kind(parse(text, now), WindowKind.WEEK)
     assert w.elapsed_fraction == pytest.approx(1 - 6 / 168, abs=0.001)
+
+
+# --- Limit resets (Ultra snapshot) ---------------------------------------------------------------
+
+def test_parses_ultra_snapshot_with_limit_resets():
+    u = parse(ultra_text(), ULTRA_NOW)
+    assert u.plan == "Ultra"
+    assert [(w.kind, w.pct) for w in u.windows] == [(WindowKind.WEEK, 35), (WindowKind.MODEL_WEEK, 4)]
+    assert u.resets == (
+        LimitReset("Fable", 3, datetime(2027, 3, 9, 2, 59, tzinfo=NY)),
+        LimitReset("Weekly", 1, datetime(2026, 12, 15, 23, 59, tzinfo=NY)),
+    )
+
+
+def test_resets_ignore_the_dropdowns_item_lines():
+    items = "\n".join(["New model reset · Expires Mar 9, 2027, 2:59 AM EST"] * 3)
+    text = ultra_text().replace("Reset for free\nWeekly reset", f"Reset for free\n{items}\nWeekly reset")
+    assert parse(text, ULTRA_NOW).resets == parse(ultra_text(), ULTRA_NOW).resets
+
+
+def test_no_resets_right_now_is_empty():
+    assert "No resets right now" in FIXTURE
+    assert parse(FIXTURE, NOW).resets == ()
+
+
+def test_expiry_without_a_year_is_the_next_such_date():
+    late_dec = datetime(2026, 12, 20, 9, 0, tzinfo=NY)
+    text = ultra_text().replace("Expires Dec 15, 11:59 PM EST", "Expires Jan 3, 11:59 PM EST")
+    weekly = [r for r in parse(text, late_dec).resets if r.kind == "Weekly"][0]
+    assert weekly.expires_at == datetime(2027, 1, 3, 23, 59, tzinfo=NY)
+
+
+def test_unreadable_expiry_keeps_the_reset_without_a_date():
+    text = ultra_text().replace("Expires Dec 15, 11:59 PM EST", "Expires soon")
+    weekly = [r for r in parse(text, ULTRA_NOW).resets if r.kind == "Weekly"][0]
+    assert weekly == LimitReset("Weekly", 1, None)
+
+
+def test_a_changed_resets_section_never_fails_the_read():
+    text = ultra_text().replace("Fable reset · 3", "Fable reset · three").replace("Weekly reset", "Weekly refill")
+    u = parse(text, ULTRA_NOW)
+    assert u.resets == ()
+    assert [w.pct for w in u.windows] == [35, 4]

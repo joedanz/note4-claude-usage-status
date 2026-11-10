@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from note4_claude.models import Usage, Window, WindowKind
+from note4_claude.models import LimitReset, Usage, Window, WindowKind
 from note4_claude.render.canvas import (
     draw_header,
     draw_text,
@@ -20,6 +20,8 @@ from note4_claude.render.layout import (
     MAX_ROWS,
     ROWS_TOP,
     TOP,
+    BAR_X0,
+    BAR_X1,
     W,
     bar_box,
     row_box,
@@ -27,6 +29,8 @@ from note4_claude.render.layout import (
 
 SHORT_PRODUCT = {"Claude Code": "Code", "Claude Duet": "Duet", "Chats": "Chat"}
 HATCH_AT = 80
+RESET_SOON = timedelta(days=7)   # a reset this close to expiring is drawn inverted
+MAX_RESET_LINES = 3
 
 
 def select_windows(windows) -> list[Window]:
@@ -36,12 +40,54 @@ def select_windows(windows) -> list[Window]:
     return (primary + models)[:MAX_ROWS]
 
 
-def caption_for(w: Window, now: datetime) -> str:
-    if w.resets_at is None:
-        return "no active window"
-    if w.resets_at.date() == now.date():
-        return f"resets {format_clock(w.resets_at)}"
-    return f"resets {w.resets_at.strftime('%a')} {format_clock(w.resets_at)}"
+def caption_for(w: Window, now: datetime, compact: bool = False) -> str:
+    """When the window resets. Compact ("Fri 3AM") leaves room for a reset tag beside it."""
+    t = w.resets_at
+    if t is None:
+        return "idle" if compact else "no active window"
+    if compact:
+        clock = f"{t.hour % 12 or 12}{t.strftime(':%M') if t.minute else ''}{'AM' if t.hour < 12 else 'PM'}"
+        return clock if t.date() == now.date() else f"{t.strftime('%a')} {clock}"
+    if t.date() == now.date():
+        return f"resets {format_clock(t)}"
+    return f"resets {t.strftime('%a')} {format_clock(t)}"
+
+
+def _expiry(at: datetime | None, now: datetime) -> tuple[str, bool]:
+    """Short expiry text, and whether it is close enough to flag."""
+    if at is None:
+        return "", False
+    if at.date() == now.date():
+        return "exp today", True
+    if at - now <= RESET_SOON:
+        return f"exp {at.strftime('%a')}", True
+    year = "" if at.year == now.year else f" '{at.strftime('%y')}"
+    return f"exp {at.strftime('%b')} {at.day}{year}", False
+
+
+def _by_expiry(resets) -> list[LimitReset]:
+    return sorted(resets, key=lambda r: (r.expires_at is None, r.expires_at.timestamp() if r.expires_at else 0))
+
+
+def reset_lines(resets, now: datetime) -> list[tuple[str, str, bool]]:
+    """One (label, expiry, soon) line per reset type, soonest expiry first."""
+    return [(f"{r.kind} x{r.count}", *_expiry(r.expires_at, now)) for r in _by_expiry(resets)]
+
+
+def _refills(r: LimitReset, w: Window) -> bool:
+    if w.kind == WindowKind.WEEK:
+        return r.kind.lower() == "weekly"
+    return w.kind == WindowKind.MODEL_WEEK and r.kind.lower() == w.label.lower()
+
+
+def reset_tag(w: Window, resets, now: datetime) -> str | None:
+    """The tag for a gauge when there is no free row: how many resets refill it, and the soonest expiry."""
+    mine = _by_expiry(r for r in resets if _refills(r, w))
+    if not mine:
+        return None
+    n = sum(r.count for r in mine)
+    exp, _ = _expiry(mine[0].expires_at, now)
+    return f"{n} reset{'' if n == 1 else 's'}" + (f" - {exp}" if exp else "")
 
 
 def _name_for(w: Window) -> str:
@@ -74,7 +120,7 @@ def side_lines(u: Usage) -> list[tuple[str, int, bool]]:
     return out
 
 
-def _draw_row(im, d, w: Window, i: int, n: int, now: datetime) -> None:
+def _draw_row(im, d, w: Window, i: int, n: int, now: datetime, tag: str | None = None) -> None:
     _, y0, _, y1 = row_box(i, n)
     bx0, by0, bx1, by1 = bar_box(i, n)
     cy = (by0 + by1) // 2
@@ -108,10 +154,37 @@ def _draw_row(im, d, w: Window, i: int, n: int, now: datetime) -> None:
         mx = bx0 + 3 + round(inner_w * w.elapsed_fraction)
         d.polygon([(mx - 5, by0 - 12), (mx + 5, by0 - 12), (mx, by0 - 5)], fill=0)
 
-    cap, csize = fit_text(caption_for(w, now), bx1 - bx0, 10, 8)
+    cap_w = bx1 - bx0
+    if tag:
+        tag, tsize = fit_text(tag, cap_w * 2 // 3, 10, 8, bold=True)
+        tw = round(text_width(tag, tsize, True)) + 8
+        d.rectangle((bx1 - tw, by1 + 3, bx1, by1 + 17), fill=0)
+        draw_text(d, (bx1 - 4, by1 + 10), tag, tsize, bold=True, fill=1, anchor="rm")
+        cap_w -= tw + 6
+    cap, csize = fit_text(caption_for(w, now, compact=bool(tag)), cap_w, 10, 8)
     draw_text(d, (bx0, by1 + 10), cap, csize, anchor="lm")
     if i < n - 1:
         d.line((0, y1 - 1, MAIN_W, y1 - 1), fill=0)
+
+
+def _draw_resets_row(d, resets, i: int, n: int, now: datetime) -> None:
+    _, y0, _, y1 = row_box(i, n)
+    cy = (y0 + y1) // 2
+    total = sum(r.count for r in resets)
+    draw_text(d, (10, cy - 7), str(total), 28, bold=True, anchor="lm")
+    draw_text(d, (10, cy + 18), "RESET" if total == 1 else "RESETS", 10, bold=True, anchor="lm")
+    lines = reset_lines(resets, now)[:MAX_RESET_LINES]
+    step = 26
+    y = cy - step * (len(lines) - 1) // 2
+    for label, exp, soon in lines:
+        fill = 1 if soon else 0
+        if soon:
+            d.rectangle((BAR_X0 - 4, y - 11, BAR_X1 + 2, y + 11), fill=0)
+        draw_text(d, (BAR_X1 - 2, y), exp, 12, bold=soon, fill=fill, anchor="rm")
+        room = BAR_X1 - BAR_X0 - text_width(exp, 12, soon) - 10
+        label, size = fit_text(label, room, 14, 9, bold=True)
+        draw_text(d, (BAR_X0, y), label, size, bold=True, fill=fill, anchor="lm")
+        y += step
 
 
 def render_usage(
@@ -141,10 +214,14 @@ def render_usage(
         draw_text(d, (10, strip_y), txt, size, bold=True, anchor="lm")
     d.line((0, TOP - 1, W, TOP - 1), fill=0)
 
-    # gauges
+    # gauges, then limit resets: a row of their own when the plan leaves one free, else a tag on each gauge
     rows = select_windows(usage.windows)
+    resets_row = bool(usage.resets) and len(rows) < MAX_ROWS
+    n = len(rows) + resets_row
     for i, w in enumerate(rows):
-        _draw_row(im, d, w, i, len(rows), now)
+        _draw_row(im, d, w, i, n, now, None if resets_row else reset_tag(w, usage.resets, now))
+    if resets_row:
+        _draw_resets_row(d, usage.resets, len(rows), n, now)
 
     # right column
     d.line((MAIN_W, TOP, MAIN_W, H), fill=0, width=2)

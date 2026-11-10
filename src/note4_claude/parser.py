@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from datetime import datetime, timedelta, timezone
 
-from note4_claude.models import Money, ParseFailed, Usage, Window, WindowKind
+from note4_claude.models import LimitReset, Money, ParseFailed, Usage, Window, WindowKind
 
 WEEKDAYS = {"mon": 0, "tue": 1, "wed": 2, "thu": 3, "fri": 4, "sat": 5, "sun": 6}
 RESET_RE = re.compile(
@@ -12,6 +12,7 @@ RESET_RE = re.compile(
     re.I,
 )
 PCT_RE = re.compile(r"(\d{1,3})%\s+used")
+ICON_RE = re.compile("[\ue000-\uf8ff]")
 # A model limit nested under "This week": its name on one line, then this caption.
 MODEL_CAP_RE = re.compile(r"Up to \d{1,3}% of your weekly limit", re.I)
 WINDOW_LEN = {
@@ -125,8 +126,49 @@ def _parse_split(lines: list[str]) -> dict[str, int]:
     return {}
 
 
+# "Limit resets": each type is a "<Kind> reset[ · N]" line followed by its "All expire ..." / "Expires ..." line.
+RESET_TYPE_RE = re.compile(r"(?P<kind>.+?) reset(?: · (?P<n>\d+))?", re.I)
+RESET_EXPIRY_RE = re.compile(r"(?:All expire|Expires) (?P<when>.+)", re.I)
+EXPIRY_RE = re.compile(
+    r"(?P<mon>[A-Za-z]{3})[a-z]* (?P<d>\d{1,2})(?:, (?P<y>\d{4}))?, (?P<h>\d{1,2}):(?P<m>\d{2})\s*(?P<ap>AM|PM)",
+    re.I,
+)
+MONTHS = {m: i for i, m in enumerate(
+    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), start=1)}
+
+
+def _parse_expiry(s: str, now: datetime) -> datetime | None:
+    """'Mar 9, 2027, 2:59 AM EST' or 'Dec 15, 11:59 PM EST'. Like the reset times, it is in the Mac's own zone."""
+    m = EXPIRY_RE.match(s)
+    if not m or m["mon"][:3].lower() not in MONTHS:
+        return None
+    hour = int(m["h"]) % 12 + (12 if m["ap"].upper() == "PM" else 0)
+    try:
+        dt = datetime(int(m["y"] or now.year), MONTHS[m["mon"][:3].lower()], int(m["d"]), hour, int(m["m"]),
+                      tzinfo=now.tzinfo)
+        if not m["y"] and dt < now - timedelta(days=1):  # no year shown: the next such date
+            dt = dt.replace(year=dt.year + 1)
+    except ValueError:
+        return None
+    return dt
+
+
+def _parse_resets(lines: list[str], now: datetime) -> tuple[LimitReset, ...]:
+    """Best effort: a section that changed shape yields no resets, never a failed read."""
+    start = next((i for i, ln in enumerate(lines) if ln.lower() in ("limit resets", "resets")), None)
+    if start is None:
+        return ()
+    out = []
+    for ln, nxt in zip(lines[start + 1 :], lines[start + 2 :]):
+        t, e = RESET_TYPE_RE.fullmatch(ln), RESET_EXPIRY_RE.fullmatch(nxt)
+        if t and e:
+            out.append(LimitReset(t["kind"], int(t["n"] or 1), _parse_expiry(e["when"], now)))
+    return tuple(out)
+
+
 def parse(text: str, now: datetime) -> Usage:
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    # claude.ai's icon font (chevrons, info buttons) shows up as private-use glyphs, often on lines of their own.
+    lines = [s for s in (ICON_RE.sub("", ln).strip() for ln in text.splitlines()) if s]
     if "Your usage" not in lines:
         raise ParseFailed("no 'Your usage' heading")
     lines = lines[lines.index("Your usage") + 1 :]
@@ -154,4 +196,5 @@ def parse(text: str, now: datetime) -> Usage:
         money=_parse_money(lines),
         product_split=_parse_split(lines),
         captured_at=now,
+        resets=_parse_resets(lines, now),
     )
