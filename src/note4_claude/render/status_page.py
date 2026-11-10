@@ -4,6 +4,7 @@ from datetime import datetime
 
 from note4_claude.models import StatusData
 from note4_claude.render.canvas import (
+    badge,
     draw_header,
     draw_text,
     fit_text,
@@ -44,14 +45,6 @@ def row_geometry(i: int, status: StatusData) -> tuple[int, int]:
     step = min(38, (ROWS_END - y0) // n) if _has_bars(status) else PLAIN_STEP
     y = y0 + i * step
     return y, y + 30
-
-
-def _badge(d, right: int, y: int, label: str) -> int:
-    """An inverted label ending at x=right; returns its left edge."""
-    wpx = int(text_width(label, 9, True)) + 8
-    d.rectangle((right - wpx, y - 2, right, y + 14), fill=0)
-    draw_text(d, (right - wpx + 4, y + 6), label, 9, bold=True, fill=1, anchor="lm")
-    return right - wpx
 
 
 def _draw_strip(d, days: list[int], base: int) -> None:
@@ -109,7 +102,7 @@ def render_status(status: StatusData, *, now: datetime, show_clock: bool = True)
             width = text_width("OK", 11, True)
             draw_text(d, (right - width, y + 6), "OK", 11, bold=True, anchor="lm")
         if not c.operational:
-            _badge(d, right, y, "DEGRADED" if c.severity == 1 else "OUTAGE")
+            badge(d, right, y, "DEGRADED" if c.severity == 1 else "OUTAGE")
         if bars and c.days:
             days = list(c.days[-DAYS:])
             if c.severity:                       # a live problem shows up in today's bar straight away

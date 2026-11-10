@@ -56,8 +56,18 @@ def draw_text(d, xy, s, size, bold=False, fill=0, anchor="la") -> None:
                 d.text((round(start + dx) + 1, y), word, font=f, fill=fill, anchor=word_anchor)
 
 
-def format_clock(dt: datetime) -> str:
-    return dt.strftime("%I:%M %p").lstrip("0")
+def format_clock(dt: datetime, short: bool = False) -> str:
+    """"3:00 AM", or short: "3AM" / "12:30PM"."""
+    s = dt.strftime("%I:%M %p").lstrip("0")
+    return s.replace(":00", "").replace(" ", "") if short else s
+
+
+def badge(d, right: int, y: int, label: str, size: int = 9) -> int:
+    """An inverted label ending at x=right; returns its left edge."""
+    wpx = int(text_width(label, size, True)) + 8
+    d.rectangle((right - wpx, y - 2, right, y + 14), fill=0)
+    draw_text(d, (right - wpx + 4, y + 6), label, size, bold=True, fill=1, anchor="lm")
+    return right - wpx
 
 
 def draw_header(d, title: str, *, updated: datetime | None = None, stale_since: datetime | None = None) -> None:

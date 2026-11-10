@@ -160,13 +160,17 @@ def test_remaining_time_is_real_elapsed_time_across_dst():
 
 # --- Limit resets (Ultra snapshot) ---------------------------------------------------------------
 
+def weekly_reset(u):
+    return next(r for r in u.resets if r.kind == "Weekly")
+
+
 def test_parses_ultra_snapshot_with_limit_resets():
     u = parse(ultra_text(), ULTRA_NOW)
     assert u.plan == "Ultra"
     assert [(w.kind, w.pct) for w in u.windows] == [(WindowKind.WEEK, 35), (WindowKind.MODEL_WEEK, 4)]
     assert u.resets == (
-        LimitReset("Fable", 3, datetime(2027, 3, 9, 2, 59, tzinfo=NY)),
-        LimitReset("Weekly", 1, datetime(2026, 12, 15, 23, 59, tzinfo=NY)),
+        LimitReset("Fable", 3, datetime(2027, 3, 9, 2, 59, tzinfo=NY), refills="Fable"),
+        LimitReset("Weekly", 1, datetime(2026, 12, 15, 23, 59, tzinfo=NY), refills="Weekly"),
     )
 
 
@@ -184,14 +188,12 @@ def test_no_resets_right_now_is_empty():
 def test_expiry_without_a_year_is_the_next_such_date():
     late_dec = datetime(2026, 12, 20, 9, 0, tzinfo=NY)
     text = ultra_text().replace("Expires Dec 15, 11:59 PM EST", "Expires Jan 3, 11:59 PM EST")
-    weekly = [r for r in parse(text, late_dec).resets if r.kind == "Weekly"][0]
-    assert weekly.expires_at == datetime(2027, 1, 3, 23, 59, tzinfo=NY)
+    assert weekly_reset(parse(text, late_dec)).expires_at == datetime(2027, 1, 3, 23, 59, tzinfo=NY)
 
 
 def test_unreadable_expiry_keeps_the_reset_without_a_date():
     text = ultra_text().replace("Expires Dec 15, 11:59 PM EST", "Expires soon")
-    weekly = [r for r in parse(text, ULTRA_NOW).resets if r.kind == "Weekly"][0]
-    assert weekly == LimitReset("Weekly", 1, None)
+    assert weekly_reset(parse(text, ULTRA_NOW)) == LimitReset("Weekly", 1, None, refills="Weekly")
 
 
 def test_a_changed_resets_section_never_fails_the_read():

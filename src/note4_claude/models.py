@@ -51,6 +51,7 @@ class LimitReset:
     kind: str
     count: int
     expires_at: datetime | None
+    refills: str | None = None   # label of the gauge it refills, when that gauge is shown
 
 
 @dataclass(frozen=True)

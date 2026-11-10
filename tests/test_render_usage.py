@@ -6,7 +6,6 @@ from zoneinfo import ZoneInfo
 from PIL import Image
 
 from note4_claude.models import LimitReset, Window, WindowKind
-from note4_claude.parser import parse
 from note4_claude.render.layout import H, W, bar_box, row_box
 from note4_claude.render.usage_page import (
     caption_for,
@@ -16,7 +15,7 @@ from note4_claude.render.usage_page import (
     select_windows,
     side_lines,
 )
-from note4_claude.sample import SAMPLE_NOW, ULTRA_NOW, sample_usage, ultra_text
+from note4_claude.sample import SAMPLE_NOW, ULTRA_NOW, sample_usage, ultra_usage
 
 NY = ZoneInfo("America/New_York")
 NOW = SAMPLE_NOW
@@ -129,16 +128,12 @@ def test_side_panel_shortens_long_product_names_so_the_percent_fits():
 
 # --- Limit resets ---------------------------------------------------------------------------------
 
-def ultra():
-    return parse(ultra_text(), ULTRA_NOW)
-
-
 def ink(png, box):
     return img(png).crop(box).histogram()[0]   # black pixels
 
 
 def test_reset_lines_list_the_soonest_expiry_first():
-    assert reset_lines(ultra().resets, ULTRA_NOW) == [
+    assert reset_lines(ultra_usage().resets, ULTRA_NOW) == [
         ("Weekly x1", "exp Dec 15", False),
         ("Fable x3", "exp Mar 9 '27", False),
     ]
@@ -154,7 +149,7 @@ def test_reset_expiring_within_a_week_shows_its_weekday_and_is_marked():
 
 
 def test_resets_fill_the_row_a_plan_leaves_free():
-    u = ultra()
+    u = ultra_usage()
     x0, y0, _, y1 = bar_box(1, 3)
     edge = (x0, (y0 + y1) // 2)                      # left edge of the Fable bar in a three-row layout
     with_resets = render_usage(u, now=ULTRA_NOW)
@@ -166,7 +161,7 @@ def test_resets_fill_the_row_a_plan_leaves_free():
 
 
 def test_a_reset_about_to_expire_is_drawn_inverted():
-    u = ultra()
+    u = ultra_usage()
     soon = dataclasses.replace(u, resets=(LimitReset("Weekly", 1, datetime(2026, 11, 12, 23, 59, tzinfo=NY)),))
     later = dataclasses.replace(u, resets=(LimitReset("Weekly", 1, datetime(2026, 12, 15, 23, 59, tzinfo=NY)),))
     free_row = row_box(2, 3)
@@ -174,7 +169,7 @@ def test_a_reset_about_to_expire_is_drawn_inverted():
 
 
 def test_without_a_free_row_each_reset_tags_the_gauge_it_refills():
-    u = dataclasses.replace(sample_usage(NOW), resets=ultra().resets)
+    u = dataclasses.replace(sample_usage(NOW), resets=ultra_usage().resets)
     rows = select_windows(u.windows)
     assert [reset_tag(w, u.resets, NOW) for w in rows] == [
         None,                                  # 5-hour: no reset type of its own
@@ -191,6 +186,6 @@ def test_compact_caption_leaves_room_for_a_tag():
 
 
 def test_golden_usage_with_resets(golden):
-    golden("usage_ultra.png", render_usage(ultra(), now=ULTRA_NOW))
-    tagged = dataclasses.replace(sample_usage(NOW), resets=ultra().resets)
+    golden("usage_ultra.png", render_usage(ultra_usage(), now=ULTRA_NOW))
+    tagged = dataclasses.replace(sample_usage(NOW), resets=ultra_usage().resets)
     golden("usage_tags.png", render_usage(tagged, now=NOW))

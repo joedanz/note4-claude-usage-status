@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import datetime, timedelta, timezone
+from itertools import pairwise
 
 from note4_claude.models import LimitReset, Money, ParseFailed, Usage, Window, WindowKind
 
@@ -130,22 +131,19 @@ def _parse_split(lines: list[str]) -> dict[str, int]:
 RESET_TYPE_RE = re.compile(r"(?P<kind>.+?) reset(?: · (?P<n>\d+))?", re.I)
 RESET_EXPIRY_RE = re.compile(r"(?:All expire|Expires) (?P<when>.+)", re.I)
 EXPIRY_RE = re.compile(
-    r"(?P<mon>[A-Za-z]{3})[a-z]* (?P<d>\d{1,2})(?:, (?P<y>\d{4}))?, (?P<h>\d{1,2}):(?P<m>\d{2})\s*(?P<ap>AM|PM)",
-    re.I,
+    r"(?P<mon>[a-z]{3})[a-z]* (?P<d>\d{1,2})(?:, (?P<y>\d{4}))?, (?P<h>\d{1,2}):(?P<m>\d{2})\s*(?P<ap>[ap]m)", re.I
 )
-MONTHS = {m: i for i, m in enumerate(
-    ("jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"), start=1)}
 
 
 def _parse_expiry(s: str, now: datetime) -> datetime | None:
     """'Mar 9, 2027, 2:59 AM EST' or 'Dec 15, 11:59 PM EST'. Like the reset times, it is in the Mac's own zone."""
     m = EXPIRY_RE.match(s)
-    if not m or m["mon"][:3].lower() not in MONTHS:
+    if not m:
         return None
-    hour = int(m["h"]) % 12 + (12 if m["ap"].upper() == "PM" else 0)
     try:
-        dt = datetime(int(m["y"] or now.year), MONTHS[m["mon"][:3].lower()], int(m["d"]), hour, int(m["m"]),
-                      tzinfo=now.tzinfo)
+        dt = datetime.strptime(
+            f"{m['mon']} {m['d']} {m['y'] or now.year} {m['h']}:{m['m']} {m['ap']}", "%b %d %Y %I:%M %p"
+        ).replace(tzinfo=now.tzinfo)
         if not m["y"] and dt < now - timedelta(days=1):  # no year shown: the next such date
             dt = dt.replace(year=dt.year + 1)
     except ValueError:
@@ -153,22 +151,25 @@ def _parse_expiry(s: str, now: datetime) -> datetime | None:
     return dt
 
 
-def _parse_resets(lines: list[str], now: datetime) -> tuple[LimitReset, ...]:
+def _parse_resets(lines: list[str], now: datetime, windows: tuple[Window, ...]) -> tuple[LimitReset, ...]:
     """Best effort: a section that changed shape yields no resets, never a failed read."""
     start = next((i for i, ln in enumerate(lines) if ln.lower() in ("limit resets", "resets")), None)
     if start is None:
         return ()
+    # Each type refills the gauge of the same name: "Weekly reset" the gauge _label() calls "Weekly", "Fable reset" Fable's.
+    gauges = {w.label.lower(): w.label for w in windows}
     out = []
-    for ln, nxt in zip(lines[start + 1 :], lines[start + 2 :]):
+    for ln, nxt in pairwise(lines[start + 1 :]):
         t, e = RESET_TYPE_RE.fullmatch(ln), RESET_EXPIRY_RE.fullmatch(nxt)
         if t and e:
-            out.append(LimitReset(t["kind"], int(t["n"] or 1), _parse_expiry(e["when"], now)))
+            kind = t["kind"]
+            out.append(LimitReset(kind, int(t["n"] or 1), _parse_expiry(e["when"], now), gauges.get(kind.lower())))
     return tuple(out)
 
 
 def parse(text: str, now: datetime) -> Usage:
     # claude.ai's icon font (chevrons, info buttons) shows up as private-use glyphs, often on lines of their own.
-    lines = [s for s in (ICON_RE.sub("", ln).strip() for ln in text.splitlines()) if s]
+    lines = [s for s in (ln.strip() for ln in ICON_RE.sub("", text).splitlines()) if s]
     if "Your usage" not in lines:
         raise ParseFailed("no 'Your usage' heading")
     lines = lines[lines.index("Your usage") + 1 :]
@@ -196,5 +197,5 @@ def parse(text: str, now: datetime) -> Usage:
         money=_parse_money(lines),
         product_split=_parse_split(lines),
         captured_at=now,
-        resets=_parse_resets(lines, now),
+        resets=_parse_resets(lines, now, windows),
     )

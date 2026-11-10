@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 
 from note4_claude.models import LimitReset, Usage, Window, WindowKind
 from note4_claude.render.canvas import (
+    badge,
     draw_header,
     draw_text,
     fit_text,
@@ -20,8 +22,6 @@ from note4_claude.render.layout import (
     MAX_ROWS,
     ROWS_TOP,
     TOP,
-    BAR_X0,
-    BAR_X1,
     W,
     bar_box,
     row_box,
@@ -31,6 +31,7 @@ SHORT_PRODUCT = {"Claude Code": "Code", "Claude Duet": "Duet", "Chats": "Chat"}
 HATCH_AT = 80
 RESET_SOON = timedelta(days=7)   # a reset this close to expiring is drawn inverted
 MAX_RESET_LINES = 3
+RESET_STEP = 26                   # px between reset lines
 
 
 def select_windows(windows) -> list[Window]:
@@ -45,12 +46,10 @@ def caption_for(w: Window, now: datetime, compact: bool = False) -> str:
     t = w.resets_at
     if t is None:
         return "idle" if compact else "no active window"
-    if compact:
-        clock = f"{t.hour % 12 or 12}{t.strftime(':%M') if t.minute else ''}{'AM' if t.hour < 12 else 'PM'}"
-        return clock if t.date() == now.date() else f"{t.strftime('%a')} {clock}"
-    if t.date() == now.date():
-        return f"resets {format_clock(t)}"
-    return f"resets {t.strftime('%a')} {format_clock(t)}"
+    when = format_clock(t, short=compact)
+    if t.date() != now.date():
+        when = f"{t:%a} {when}"
+    return when if compact else f"resets {when}"
 
 
 def _expiry(at: datetime | None, now: datetime) -> tuple[str, bool]:
@@ -66,7 +65,7 @@ def _expiry(at: datetime | None, now: datetime) -> tuple[str, bool]:
 
 
 def _by_expiry(resets) -> list[LimitReset]:
-    return sorted(resets, key=lambda r: (r.expires_at is None, r.expires_at.timestamp() if r.expires_at else 0))
+    return sorted(resets, key=lambda r: r.expires_at.timestamp() if r.expires_at else math.inf)
 
 
 def reset_lines(resets, now: datetime) -> list[tuple[str, str, bool]]:
@@ -74,15 +73,9 @@ def reset_lines(resets, now: datetime) -> list[tuple[str, str, bool]]:
     return [(f"{r.kind} x{r.count}", *_expiry(r.expires_at, now)) for r in _by_expiry(resets)]
 
 
-def _refills(r: LimitReset, w: Window) -> bool:
-    if w.kind == WindowKind.WEEK:
-        return r.kind.lower() == "weekly"
-    return w.kind == WindowKind.MODEL_WEEK and r.kind.lower() == w.label.lower()
-
-
 def reset_tag(w: Window, resets, now: datetime) -> str | None:
     """The tag for a gauge when there is no free row: how many resets refill it, and the soonest expiry."""
-    mine = _by_expiry(r for r in resets if _refills(r, w))
+    mine = _by_expiry(r for r in resets if r.refills == w.label)
     if not mine:
         return None
     n = sum(r.count for r in mine)
@@ -120,21 +113,22 @@ def side_lines(u: Usage) -> list[tuple[str, int, bool]]:
     return out
 
 
+def _draw_figure(d, cy: int, big: str, name: str, inverted: bool = False) -> None:
+    """A row's left block: a big figure (inverted when high) with a small bold name under it."""
+    if inverted:
+        right = max(78, 10 + int(text_width(big, 28, True)) + 6)
+        d.rectangle((6, cy - 22, right, cy + 8), fill=0)
+    draw_text(d, (10, cy - 7), big, 28, bold=True, fill=int(inverted), anchor="lm")
+    name, size = fit_text(name, 78, 10, 8, bold=True)
+    draw_text(d, (10, cy + 18), name, size, bold=True, anchor="lm")
+
+
 def _draw_row(im, d, w: Window, i: int, n: int, now: datetime, tag: str | None = None) -> None:
     _, y0, _, y1 = row_box(i, n)
     bx0, by0, bx1, by1 = bar_box(i, n)
     cy = (by0 + by1) // 2
 
-    # percent (inverted badge when high)
-    pct_txt = f"{w.pct}%"
-    if w.pct >= HATCH_AT:
-        badge_right = max(78, 10 + int(text_width(pct_txt, 28, True)) + 6)
-        d.rectangle((6, cy - 22, badge_right, cy + 8), fill=0)
-        draw_text(d, (10, cy - 7), pct_txt, 28, bold=True, fill=1, anchor="lm")
-    else:
-        draw_text(d, (10, cy - 7), pct_txt, 28, bold=True, anchor="lm")
-    name, nsize = fit_text(_name_for(w), 78, 10, 8, bold=True)
-    draw_text(d, (10, cy + 18), name, nsize, bold=True, anchor="lm")
+    _draw_figure(d, cy, f"{w.pct}%", _name_for(w), inverted=w.pct >= HATCH_AT)
 
     # bar
     d.rectangle((bx0, by0, bx1, by1), outline=0, width=3)
@@ -157,10 +151,7 @@ def _draw_row(im, d, w: Window, i: int, n: int, now: datetime, tag: str | None =
     cap_w = bx1 - bx0
     if tag:
         tag, tsize = fit_text(tag, cap_w * 2 // 3, 10, 8, bold=True)
-        tw = round(text_width(tag, tsize, True)) + 8
-        d.rectangle((bx1 - tw, by1 + 3, bx1, by1 + 17), fill=0)
-        draw_text(d, (bx1 - 4, by1 + 10), tag, tsize, bold=True, fill=1, anchor="rm")
-        cap_w -= tw + 6
+        cap_w = badge(d, bx1, by1 + 4, tag, tsize) - bx0 - 6
     cap, csize = fit_text(caption_for(w, now, compact=bool(tag)), cap_w, 10, 8)
     draw_text(d, (bx0, by1 + 10), cap, csize, anchor="lm")
     if i < n - 1:
@@ -169,22 +160,18 @@ def _draw_row(im, d, w: Window, i: int, n: int, now: datetime, tag: str | None =
 
 def _draw_resets_row(d, resets, i: int, n: int, now: datetime) -> None:
     _, y0, _, y1 = row_box(i, n)
-    cy = (y0 + y1) // 2
+    bx0, by0, bx1, by1 = bar_box(i, n)
     total = sum(r.count for r in resets)
-    draw_text(d, (10, cy - 7), str(total), 28, bold=True, anchor="lm")
-    draw_text(d, (10, cy + 18), "RESET" if total == 1 else "RESETS", 10, bold=True, anchor="lm")
+    _draw_figure(d, (by0 + by1) // 2, str(total), "RESET" if total == 1 else "RESETS")
     lines = reset_lines(resets, now)[:MAX_RESET_LINES]
-    step = 26
-    y = cy - step * (len(lines) - 1) // 2
+    y = (y0 + y1) // 2 - RESET_STEP * (len(lines) - 1) // 2
     for label, exp, soon in lines:
-        fill = 1 if soon else 0
         if soon:
-            d.rectangle((BAR_X0 - 4, y - 11, BAR_X1 + 2, y + 11), fill=0)
-        draw_text(d, (BAR_X1 - 2, y), exp, 12, bold=soon, fill=fill, anchor="rm")
-        room = BAR_X1 - BAR_X0 - text_width(exp, 12, soon) - 10
-        label, size = fit_text(label, room, 14, 9, bold=True)
-        draw_text(d, (BAR_X0, y), label, size, bold=True, fill=fill, anchor="lm")
-        y += step
+            d.rectangle((bx0 - 4, y - 11, bx1 + 2, y + 11), fill=0)
+        draw_text(d, (bx1 - 2, y), exp, 12, bold=soon, fill=int(soon), anchor="rm")
+        label, size = fit_text(label, bx1 - bx0 - text_width(exp, 12, soon) - 10, 14, 9, bold=True)
+        draw_text(d, (bx0, y), label, size, bold=True, fill=int(soon), anchor="lm")
+        y += RESET_STEP
 
 
 def render_usage(

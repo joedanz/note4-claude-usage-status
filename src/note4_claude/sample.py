@@ -31,6 +31,10 @@ def ultra_text() -> str:
     return _ULTRA.read_text()
 
 
+def ultra_usage(now: datetime = ULTRA_NOW) -> Usage:
+    return parse(ultra_text(), now)
+
+
 def sample_usage(now: datetime) -> Usage:
     return parse(sample_text(), now)
 
