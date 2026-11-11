@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "note4-claude"
-version = "0.2.1"
+version = "0.2.2"
 description = "Claude plan usage and Anthropic status on a ZECTRIX NOTE4 Devkit e-paper display"
 license = "MIT"
 requires-python = ">=3.11"
