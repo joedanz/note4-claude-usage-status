@@ -129,16 +129,17 @@ def _parse_split(lines: list[str]) -> dict[str, int]:
 
 # "Limit resets": each type is a "<Kind> reset[ · N]" line followed by its expiry line: "Expires ..." for one reset,
 # "All expire ..." for several on the same date, "First expires ..." (the soonest) for several on different dates.
+# Only the type line is required, so a new wording loses at most the date, never the reset.
 RESET_TYPE_RE = re.compile(r"(?P<kind>.+?) reset(?: · (?P<n>\d+))?", re.I)
-RESET_EXPIRY_RE = re.compile(r"(?:\w+ )?expires? (?P<when>.+)", re.I)
 EXPIRY_RE = re.compile(
     r"(?P<mon>[a-z]{3})[a-z]* (?P<d>\d{1,2})(?:, (?P<y>\d{4}))?, (?P<h>\d{1,2}):(?P<m>\d{2})\s*(?P<ap>[ap]m)", re.I
 )
 
 
 def _parse_expiry(s: str, now: datetime) -> datetime | None:
-    """'Mar 9, 2027, 2:59 AM EST' or 'Dec 15, 11:59 PM EST'. Like the reset times, it is in the Mac's own zone."""
-    m = EXPIRY_RE.match(s)
+    """The date in 'All expire Mar 9, 2027, 2:59 AM EST' or 'Expires Dec 15, 11:59 PM EST', in the Mac's own zone
+    like the reset times."""
+    m = EXPIRY_RE.search(s)
     if not m:
         return None
     try:
@@ -161,10 +162,9 @@ def _parse_resets(lines: list[str], now: datetime, windows: tuple[Window, ...]) 
     gauges = {w.label.lower(): w.label for w in windows}
     out = []
     for ln, nxt in pairwise(lines[start + 1 :]):
-        t, e = RESET_TYPE_RE.fullmatch(ln), RESET_EXPIRY_RE.fullmatch(nxt)
-        if t and e:
+        if t := RESET_TYPE_RE.fullmatch(ln):
             kind = t["kind"]
-            out.append(LimitReset(kind, int(t["n"] or 1), _parse_expiry(e["when"], now), gauges.get(kind.lower())))
+            out.append(LimitReset(kind, int(t["n"] or 1), _parse_expiry(nxt, now), gauges.get(kind.lower())))
     return tuple(out)
 
 

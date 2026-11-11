@@ -195,10 +195,14 @@ def test_resets_of_one_type_expiring_on_different_days_give_the_first_expiry():
     text = ultra_text().replace(
         "Weekly reset\nExpires Dec 15, 11:59 PM EST", "Weekly reset · 2\n\nFirst expires Dec 12, 5:00 PM EST"
     )
-    assert text != ultra_text()
     assert weekly_reset(parse(text, ULTRA_NOW)) == LimitReset(
         "Weekly", 2, datetime(2026, 12, 12, 17, 0, tzinfo=NY), refills="Weekly"
     )
+
+
+def test_unfamiliar_expiry_wording_still_finds_the_date():
+    text = ultra_text().replace("Expires Dec 15", "Use by Dec 15")
+    assert weekly_reset(parse(text, ULTRA_NOW)).expires_at == datetime(2026, 12, 15, 23, 59, tzinfo=NY)
 
 
 def test_unreadable_expiry_keeps_the_reset_without_a_date():
