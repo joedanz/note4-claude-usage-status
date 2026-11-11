@@ -127,9 +127,10 @@ def _parse_split(lines: list[str]) -> dict[str, int]:
     return {}
 
 
-# "Limit resets": each type is a "<Kind> reset[ · N]" line followed by its "All expire ..." / "Expires ..." line.
+# "Limit resets": each type is a "<Kind> reset[ · N]" line followed by its expiry line: "Expires ..." for one reset,
+# "All expire ..." for several on the same date, "First expires ..." (the soonest) for several on different dates.
 RESET_TYPE_RE = re.compile(r"(?P<kind>.+?) reset(?: · (?P<n>\d+))?", re.I)
-RESET_EXPIRY_RE = re.compile(r"(?:All expire|Expires) (?P<when>.+)", re.I)
+RESET_EXPIRY_RE = re.compile(r"(?:\w+ )?expires? (?P<when>.+)", re.I)
 EXPIRY_RE = re.compile(
     r"(?P<mon>[a-z]{3})[a-z]* (?P<d>\d{1,2})(?:, (?P<y>\d{4}))?, (?P<h>\d{1,2}):(?P<m>\d{2})\s*(?P<ap>[ap]m)", re.I
 )
