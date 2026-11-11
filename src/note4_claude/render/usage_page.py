@@ -30,8 +30,7 @@ from note4_claude.render.layout import (
 SHORT_PRODUCT = {"Claude Code": "Code", "Claude Duet": "Duet", "Chats": "Chat"}
 HATCH_AT = 80
 RESET_SOON = timedelta(days=7)   # a reset this close to expiring is drawn inverted
-MAX_RESET_LINES = 3
-RESET_STEP = 26                   # px between reset lines
+MAX_RESET_COLUMNS = 3            # reset types that fit side by side
 
 
 def select_windows(windows) -> list[Window]:
@@ -68,9 +67,11 @@ def _by_expiry(resets) -> list[LimitReset]:
     return sorted(resets, key=lambda r: r.expires_at.timestamp() if r.expires_at else math.inf)
 
 
-def reset_lines(resets, now: datetime) -> list[tuple[str, str, bool]]:
-    """One (label, expiry, soon) line per reset type, soonest expiry first."""
-    return [(f"{r.kind} x{r.count}", *_expiry(r.expires_at, now)) for r in _by_expiry(resets)]
+def reset_columns(resets, now: datetime) -> list[tuple[str, str, str, bool]]:
+    """One (count, name, expiry, soon) column per reset type, soonest expiry first, as many as fit."""
+    return [
+        (str(r.count), r.kind.upper(), *_expiry(r.expires_at, now)) for r in _by_expiry(resets)[:MAX_RESET_COLUMNS]
+    ]
 
 
 def reset_tag(w: Window, resets, now: datetime) -> str | None:
@@ -163,15 +164,20 @@ def _draw_resets_row(d, resets, i: int, n: int, now: datetime) -> None:
     bx0, by0, bx1, by1 = bar_box(i, n)
     total = sum(r.count for r in resets)
     _draw_figure(d, (by0 + by1) // 2, str(total), "RESET" if total == 1 else "RESETS")
-    lines = reset_lines(resets, now)[:MAX_RESET_LINES]
-    y = (y0 + y1) // 2 - RESET_STEP * (len(lines) - 1) // 2
-    for label, exp, soon in lines:
+    # The breakdown: each type's count, name and expiry stacked in a column of its own, inverted when expiring soon.
+    cols = reset_columns(resets, now)
+    cy, col_w = (y0 + y1) // 2, (bx1 - bx0) // len(cols)
+    for k, (count, name, exp, soon) in enumerate(cols):
+        x, fill = bx0 + k * col_w, int(soon)
         if soon:
-            d.rectangle((bx0 - 4, y - 11, bx1 + 2, y + 11), fill=0)
-        draw_text(d, (bx1 - 2, y), exp, 12, bold=soon, fill=int(soon), anchor="rm")
-        label, size = fit_text(label, bx1 - bx0 - text_width(exp, 12, soon) - 10, 14, 9, bold=True)
-        draw_text(d, (bx0, y), label, size, bold=True, fill=int(soon), anchor="lm")
-        y += RESET_STEP
+            d.rectangle((x - 4, cy - 30, x + col_w - 8, cy + 30), fill=0)
+        draw_text(d, (x, cy - 15), count, 22, bold=True, fill=fill, anchor="lm")
+        name, size = fit_text(name, col_w - 12, 12, 8, bold=True)
+        draw_text(d, (x, cy + 6), name, size, bold=True, fill=fill, anchor="lm")
+        if text_width(exp, 9) > col_w - 12:  # a narrow column keeps the whole date by dropping "exp "
+            exp = exp.removeprefix("exp ")
+        exp, size = fit_text(exp, col_w - 12, 10, 8)
+        draw_text(d, (x, cy + 22), exp, size, fill=fill, anchor="lm")
 
 
 def render_usage(

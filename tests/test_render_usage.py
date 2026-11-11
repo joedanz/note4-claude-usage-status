@@ -10,7 +10,7 @@ from note4_claude.render.layout import H, W, bar_box, row_box
 from note4_claude.render.usage_page import (
     caption_for,
     render_usage,
-    reset_lines,
+    reset_columns,
     reset_tag,
     select_windows,
     side_lines,
@@ -132,20 +132,25 @@ def ink(png, box):
     return img(png).crop(box).histogram()[0]   # black pixels
 
 
-def test_reset_lines_list_the_soonest_expiry_first():
-    assert reset_lines(ultra_usage().resets, ULTRA_NOW) == [
-        ("Weekly x1", "exp Dec 15", False),
-        ("Fable x3", "exp Mar 9 '27", False),
+def test_reset_columns_list_the_soonest_expiry_first():
+    assert reset_columns(ultra_usage().resets, ULTRA_NOW) == [
+        ("1", "WEEKLY", "exp Dec 15", False),
+        ("3", "FABLE", "exp Mar 9 '27", False),
     ]
+
+
+def test_only_as_many_reset_columns_as_fit():
+    four = tuple(LimitReset(k, 1, datetime(2026, 12, d, 23, 59, tzinfo=NY)) for d, k in enumerate("ABCD", start=1))
+    assert [name for _, name, _, _ in reset_columns(four, ULTRA_NOW)] == ["A", "B", "C"]
 
 
 def test_reset_expiring_within_a_week_shows_its_weekday_and_is_marked():
     thu = LimitReset("Weekly", 1, datetime(2026, 11, 12, 23, 59, tzinfo=NY))
     today = LimitReset("Weekly", 1, datetime(2026, 11, 9, 23, 59, tzinfo=NY))
     undated = LimitReset("Weekly", 1, None)
-    assert reset_lines((thu,), ULTRA_NOW) == [("Weekly x1", "exp Thu", True)]
-    assert reset_lines((today,), ULTRA_NOW) == [("Weekly x1", "exp today", True)]
-    assert reset_lines((undated,), ULTRA_NOW) == [("Weekly x1", "", False)]
+    assert reset_columns((thu,), ULTRA_NOW) == [("1", "WEEKLY", "exp Thu", True)]
+    assert reset_columns((today,), ULTRA_NOW) == [("1", "WEEKLY", "exp today", True)]
+    assert reset_columns((undated,), ULTRA_NOW) == [("1", "WEEKLY", "", False)]
 
 
 def test_resets_fill_the_row_a_plan_leaves_free():
