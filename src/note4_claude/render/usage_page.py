@@ -52,15 +52,15 @@ def caption_for(w: Window, now: datetime, compact: bool = False) -> str:
 
 
 def _expiry(at: datetime | None, now: datetime) -> tuple[str, bool]:
-    """Short expiry text, and whether it is close enough to flag."""
+    """When it expires, in short ("today", "Thu", "Dec 15", "Mar 9 '27"), and whether that is close enough to flag."""
     if at is None:
         return "", False
     if at.date() == now.date():
-        return "exp today", True
+        return "today", True
     if at - now <= RESET_SOON:
-        return f"exp {at.strftime('%a')}", True
+        return at.strftime("%a"), True
     year = "" if at.year == now.year else f" '{at.strftime('%y')}"
-    return f"exp {at.strftime('%b')} {at.day}{year}", False
+    return f"{at.strftime('%b')} {at.day}{year}", False
 
 
 def _by_expiry(resets) -> list[LimitReset]:
@@ -81,7 +81,7 @@ def reset_tag(w: Window, resets, now: datetime) -> str | None:
         return None
     n = sum(r.count for r in mine)
     exp, _ = _expiry(mine[0].expires_at, now)
-    return f"{n} reset{'' if n == 1 else 's'}" + (f" - {exp}" if exp else "")
+    return f"{n} reset{'' if n == 1 else 's'}" + (f" - exp {exp}" if exp else "")
 
 
 def _name_for(w: Window) -> str:
@@ -164,20 +164,22 @@ def _draw_resets_row(d, resets, i: int, n: int, now: datetime) -> None:
     bx0, by0, bx1, by1 = bar_box(i, n)
     total = sum(r.count for r in resets)
     _draw_figure(d, (by0 + by1) // 2, str(total), "RESET" if total == 1 else "RESETS")
-    # The breakdown: each type's count, name and expiry stacked in a column of its own, inverted when expiring soon.
     cols = reset_columns(resets, now)
     cy, col_w = (y0 + y1) // 2, (bx1 - bx0) // len(cols)
+    text_w = col_w - 12
     for k, (count, name, exp, soon) in enumerate(cols):
         x, fill = bx0 + k * col_w, int(soon)
         if soon:
             d.rectangle((x - 4, cy - 30, x + col_w - 8, cy + 30), fill=0)
         draw_text(d, (x, cy - 15), count, 22, bold=True, fill=fill, anchor="lm")
-        name, size = fit_text(name, col_w - 12, 12, 8, bold=True)
+        name, size = fit_text(name, text_w, 12, 8, bold=True)
         draw_text(d, (x, cy + 6), name, size, bold=True, fill=fill, anchor="lm")
-        if text_width(exp, 9) > col_w - 12:  # a narrow column keeps the whole date by dropping "exp "
-            exp = exp.removeprefix("exp ")
-        exp, size = fit_text(exp, col_w - 12, 10, 8)
-        draw_text(d, (x, cy + 22), exp, size, fill=fill, anchor="lm")
+        if exp:
+            full = f"exp {exp}"
+            shown, size = fit_text(full, text_w, 10, 8)
+            if shown != full:  # a narrow column shows the whole date without "exp" rather than a cut-off one
+                shown, size = fit_text(exp, text_w, 10, 8)
+            draw_text(d, (x, cy + 22), shown, size, fill=fill, anchor="lm")
 
 
 def render_usage(

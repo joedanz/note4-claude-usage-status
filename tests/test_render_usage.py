@@ -134,8 +134,8 @@ def ink(png, box):
 
 def test_reset_columns_list_the_soonest_expiry_first():
     assert reset_columns(ultra_usage().resets, ULTRA_NOW) == [
-        ("1", "WEEKLY", "exp Dec 15", False),
-        ("3", "FABLE", "exp Mar 9 '27", False),
+        ("1", "WEEKLY", "Dec 15", False),
+        ("3", "FABLE", "Mar 9 '27", False),
     ]
 
 
@@ -148,8 +148,8 @@ def test_reset_expiring_within_a_week_shows_its_weekday_and_is_marked():
     thu = LimitReset("Weekly", 1, datetime(2026, 11, 12, 23, 59, tzinfo=NY))
     today = LimitReset("Weekly", 1, datetime(2026, 11, 9, 23, 59, tzinfo=NY))
     undated = LimitReset("Weekly", 1, None)
-    assert reset_columns((thu,), ULTRA_NOW) == [("1", "WEEKLY", "exp Thu", True)]
-    assert reset_columns((today,), ULTRA_NOW) == [("1", "WEEKLY", "exp today", True)]
+    assert reset_columns((thu,), ULTRA_NOW) == [("1", "WEEKLY", "Thu", True)]
+    assert reset_columns((today,), ULTRA_NOW) == [("1", "WEEKLY", "today", True)]
     assert reset_columns((undated,), ULTRA_NOW) == [("1", "WEEKLY", "", False)]
 
 
